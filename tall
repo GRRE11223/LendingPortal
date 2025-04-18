@@ -1,0 +1,5 @@
+[33mcommit d3968bf1901868ef941a9f4f2739463eafe307c5[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m
+Author: GRRE11223 <rr1122311223@gmail.com>
+Date:   Fri Apr 18 12:43:42 2025 -0700
+
+    fix: remove react-leaflet and add .npmrc

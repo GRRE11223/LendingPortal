@@ -55,14 +55,17 @@ export default function NewRequest() {
     propertyType: 'residential',
   });
 
-  // Format number with commas and two decimal places
+  // Format number for display with two decimal places
   const formatNumber = (value: string) => {
     if (!value) return '';
+    // If the user is currently typing (has a decimal point at the end), return as is
+    if (value.endsWith('.')) return value;
+    // If the user is typing decimal places, return as is
+    if (value.includes('.') && value.split('.')[1].length <= 2) return value;
+    
     const number = parseFloat(value);
-    return number.toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
+    if (isNaN(number)) return '';
+    return number.toFixed(2);
   };
 
   // Parse formatted number back to plain number
@@ -74,18 +77,22 @@ export default function NewRequest() {
   // Handle LTV and Loan Amount calculations
   useEffect(() => {
     if (formData.propertyValue) {
-      const propertyValue = parseFloat(parseFormattedNumber(formData.propertyValue));
+      const propertyValue = parseFloat(formData.propertyValue);
       
       if (formData.loanAmount && !formData.ltv) {
         // Calculate LTV from Loan Amount
-        const loanAmount = parseFloat(parseFormattedNumber(formData.loanAmount));
+        const loanAmount = parseFloat(formData.loanAmount);
         const calculatedLtv = ((loanAmount / propertyValue) * 100).toFixed(1);
-        setFormData(prev => ({ ...prev, ltv: calculatedLtv }));
+        if (parseFloat(calculatedLtv) <= 100) {
+          setFormData(prev => ({ ...prev, ltv: calculatedLtv }));
+        }
       } else if (formData.ltv && !formData.loanAmount) {
         // Calculate Loan Amount from LTV
         const ltv = parseFloat(formData.ltv);
-        const calculatedLoanAmount = ((propertyValue * ltv) / 100).toFixed(2);
-        setFormData(prev => ({ ...prev, loanAmount: calculatedLoanAmount }));
+        if (ltv <= 100) {
+          const calculatedLoanAmount = ((propertyValue * ltv) / 100).toFixed(2);
+          setFormData(prev => ({ ...prev, loanAmount: calculatedLoanAmount }));
+        }
       }
     }
   }, [formData.propertyValue, formData.loanAmount, formData.ltv]);
@@ -94,25 +101,30 @@ export default function NewRequest() {
     const { name, value } = e.target;
     
     if (name === 'propertyValue' || name === 'loanAmount') {
-      const plainNumber = value.replace(/[^\d.]/g, '');
-      if (plainNumber === '' || /^\d*\.?\d*$/.test(plainNumber)) {
+      // Remove commas from input
+      const cleanValue = value.replace(/,/g, '');
+      // Only validate that the input is a valid number
+      if (cleanValue === '' || /^\d*\.?\d*$/.test(cleanValue)) {
         if (name === 'loanAmount') {
           setFormData(prev => ({ 
             ...prev, 
-            [name]: plainNumber,
+            [name]: cleanValue,
             ltv: '' 
           }));
         } else {
-          setFormData(prev => ({ ...prev, [name]: plainNumber }));
+          setFormData(prev => ({ ...prev, [name]: cleanValue }));
         }
       }
     } else if (name === 'ltv') {
       if (value === '' || /^\d*\.?\d*$/.test(value)) {
-        setFormData(prev => ({ 
-          ...prev, 
-          [name]: value,
-          loanAmount: '' 
-        }));
+        const numericValue = parseFloat(value);
+        if (isNaN(numericValue) || numericValue <= 100) {
+          setFormData(prev => ({ 
+            ...prev, 
+            [name]: value,
+            loanAmount: '' 
+          }));
+        }
       }
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
@@ -214,8 +226,24 @@ export default function NewRequest() {
                       <input
                         type="text"
                         name="propertyValue"
-                        value={formData.propertyValue ? formatNumber(formData.propertyValue) : ''}
+                        value={formData.propertyValue}
                         onChange={handleChange}
+                        onBlur={(e) => {
+                          const value = e.target.value;
+                          if (value && !value.endsWith('.')) {
+                            const number = parseFloat(value);
+                            if (!isNaN(number)) {
+                              const formatted = new Intl.NumberFormat('en-US', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                              }).format(number);
+                              setFormData(prev => ({
+                                ...prev,
+                                propertyValue: formatted
+                              }));
+                            }
+                          }
+                        }}
                         required
                         className="pl-7 block w-full px-3 py-2 bg-white rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-900 text-sm"
                         placeholder="Enter property value"
@@ -236,8 +264,24 @@ export default function NewRequest() {
                         <input
                           type="text"
                           name="loanAmount"
-                          value={formData.loanAmount ? formatNumber(formData.loanAmount) : ''}
+                          value={formData.loanAmount}
                           onChange={handleChange}
+                          onBlur={(e) => {
+                            const value = e.target.value;
+                            if (value && !value.endsWith('.')) {
+                              const number = parseFloat(value);
+                              if (!isNaN(number)) {
+                                const formatted = new Intl.NumberFormat('en-US', {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2
+                                }).format(number);
+                                setFormData(prev => ({
+                                  ...prev,
+                                  loanAmount: formatted
+                                }));
+                              }
+                            }
+                          }}
                           className="pl-7 block w-full px-3 py-2 bg-white rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-900 text-sm"
                           placeholder="Enter loan amount"
                         />
@@ -256,7 +300,7 @@ export default function NewRequest() {
                           onChange={handleChange}
                           min="0"
                           max="100"
-                          step="0.1"
+                          step="any"
                           className="block w-full px-3 py-2 bg-white rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-900 text-sm pr-8"
                           placeholder="Enter LTV"
                         />
