@@ -1,0 +1,26 @@
+<svg width="300" height="200" viewBox="0 0 300 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="300" height="200" rx="16" fill="#F0F9FF"/>
+  
+  <!-- Document -->
+  <rect x="40" y="40" width="80" height="100" rx="4" fill="white" stroke="#3B82F6" stroke-width="2"/>
+  <line x1="60" y1="60" x2="100" y2="60" stroke="#3B82F6" stroke-width="2"/>
+  <line x1="60" y1="80" x2="100" y2="80" stroke="#3B82F6" stroke-width="2"/>
+  <line x1="60" y1="100" x2="100" y2="100" stroke="#3B82F6" stroke-width="2"/>
+  
+  <!-- Arrow -->
+  <path d="M140 90L180 90M170 80L180 90L170 100" stroke="#3B82F6" stroke-width="2"/>
+  
+  <!-- Money/Coins -->
+  <circle cx="220" cy="90" r="30" fill="#3B82F6"/>
+  <text x="210" y="100" fill="white" font-family="Arial" font-size="24" font-weight="bold">$</text>
+  
+  <!-- Status Indicators -->
+  <circle cx="60" cy="160" r="8" fill="#10B981"/>
+  <circle cx="150" cy="160" r="8" fill="#F59E0B"/>
+  <circle cx="240" cy="160" r="8" fill="#3B82F6"/>
+  
+  <!-- Connection Lines -->
+  <line x1="68" y1="160" x2="142" y2="160" stroke="#E5E7EB" stroke-width="2"/>
+  <line x1="158" y1="160" x2="232" y2="160" stroke="#E5E7EB" stroke-width="2"/>
+</svg> 
