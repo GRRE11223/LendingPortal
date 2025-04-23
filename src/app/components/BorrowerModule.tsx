@@ -145,16 +145,7 @@ export default function BorrowerModule({
 
     // Format credit score
     if (field === 'creditScore') {
-      // Remove non-numeric characters
-      const numbers = value.toString().replace(/\D/g, '');
-      if (numbers.length > 0) {
-        const score = parseInt(numbers);
-        if (score < 300) formattedValue = '300';
-        else if (score > 850) formattedValue = '850';
-        else formattedValue = score.toString();
-      } else {
-        formattedValue = '';
-      }
+      formattedValue = value;
     }
 
     // Format annual income as user types
@@ -175,25 +166,22 @@ export default function BorrowerModule({
 
   const handleSave = async () => {
     try {
-      // Format data for submission
       const updatedInfo: BorrowerInfo = {
-        ...request?.borrowerInfo,
-        email: formData.email.trim() || '',
-        phone: formData.phone.trim() || '',
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
         creditScore: formData.creditScore ? parseInt(formData.creditScore.toString()) : 0,
-        annualIncome: formData.annualIncome ? parseFloat(formData.annualIncome.toString()) : 0,
-        employmentStatus: formData.employmentStatus as 'employed' | 'self-employed' | 'unemployed' | 'retired',
-        employerName: formData.employerName.trim() || '',
-        employmentLength: formData.employmentLength.trim() || '',
-        documents: request?.borrowerInfo?.documents || []
+        documents: request?.borrowerInfo?.documents || [],
+        annualIncome: request?.borrowerInfo?.annualIncome || 0,
+        employmentStatus: request?.borrowerInfo?.employmentStatus || 'employed',
+        employerName: request?.borrowerInfo?.employerName || '',
+        employmentLength: request?.borrowerInfo?.employmentLength || ''
       };
 
-      // Update both borrower info and name
       await onInfoUpdate(updatedInfo);
       
-      // Update the request object with the new name
       if (request) {
-        request.borrowerName = formData.name.trim() || '';
+        request.borrowerName = formData.name.trim();
+        request.borrowerInfo = updatedInfo;
       }
 
       setIsEditing(false);
@@ -359,226 +347,120 @@ export default function BorrowerModule({
       </div>
 
       {/* Borrower Information */}
-      <div className="bg-white rounded-lg p-6 border border-gray-200">
-        <div className="flex justify-between items-center mb-6">
+      <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+        <div className="flex justify-between items-center mb-4">
           <div>
             <h3 className="text-xl font-semibold text-gray-900">Borrower Information</h3>
-            <p className="text-sm text-gray-500 mt-1">Manage borrower's personal and financial details</p>
+            <p className="text-sm text-gray-500 mt-1">Manage borrower's personal details</p>
           </div>
-          {!isEditing ? (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <PencilIcon className="h-4 w-4 mr-2" />
-              Edit Details
-            </button>
-          ) : (
-            <div className="space-x-2">
-              <button
-                onClick={() => {
-                  setIsEditing(false);
-                  setFormData({
-                    name: request?.borrowerName || '',
-                    email: request?.borrowerInfo?.email || '',
-                    phone: request?.borrowerInfo?.phone || '',
-                    creditScore: request?.borrowerInfo?.creditScore || '',
-                    annualIncome: request?.borrowerInfo?.annualIncome || '',
-                    employmentStatus: request?.borrowerInfo?.employmentStatus || 'employed',
-                    employerName: request?.borrowerInfo?.employerName || '',
-                    employmentLength: request?.borrowerInfo?.employmentLength || '',
-                  });
-                }}
-                className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                <XMarkIcon className="h-4 w-4 mr-2" />
+          <button
+            onClick={() => setIsEditing(!isEditing)}
+            className="inline-flex items-center px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-all duration-200"
+          >
+            {isEditing ? (
+              <>
+                <XMarkIcon className="h-4 w-4 mr-1" />
                 Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                <CheckIcon className="h-4 w-4 mr-2" />
-                Save Changes
-              </button>
-            </div>
-          )}
+              </>
+            ) : (
+              <>
+                <PencilIcon className="h-4 w-4 mr-1" />
+                Edit Details
+              </>
+            )}
+          </button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {isEditing ? (
-            <>
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1">Name</label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    placeholder="Enter full name"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">Enter your full legal name</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1">Email</label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    placeholder="example@email.com"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">Enter a valid email address</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1">Phone</label>
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    placeholder="(XXX) XXX-XXXX"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">Format: (XXX) XXX-XXXX</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1">Credit Score</label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    value={formData.creditScore}
-                    onChange={(e) => handleInputChange('creditScore', e.target.value)}
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    placeholder="Enter score (300-850)"
-                    maxLength={3}
-                  />
-                  <p className="mt-1 text-xs text-gray-500">Valid range: 300-850</p>
-                </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="text-sm text-gray-500 mb-1">Name</div>
+            {isEditing ? (
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                className="w-full bg-white px-2 py-1 rounded border-gray-200 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter name"
+              />
+            ) : (
+              <div className="text-sm font-medium text-gray-900">
+                {request?.borrowerName || 'Not provided'}
               </div>
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1">Annual Income</label>
-                  <div className="relative rounded-md shadow-sm">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <span className="text-gray-500 sm:text-sm">$</span>
-                    </div>
-                    <input
-                      type="text"
-                      value={formData.annualIncome}
-                      onChange={(e) => handleInputChange('annualIncome', e.target.value)}
-                      className="pl-7 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                      placeholder="0.00"
-                    />
-                  </div>
-                  <p className="mt-1 text-xs text-gray-500">Enter annual income in USD</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1">Employment Status</label>
-                  <select
-                    value={formData.employmentStatus}
-                    onChange={(e) => handleInputChange('employmentStatus', e.target.value)}
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  >
-                    <option value="employed">Employed</option>
-                    <option value="self-employed">Self-Employed</option>
-                    <option value="unemployed">Unemployed</option>
-                    <option value="retired">Retired</option>
-                  </select>
-                  <p className="mt-1 text-xs text-gray-500">Select current employment status</p>
-                </div>
-                {(formData.employmentStatus === 'employed' || formData.employmentStatus === 'self-employed') && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-1">Employer Name</label>
-                      <input
-                        type="text"
-                        value={formData.employerName}
-                        onChange={(e) => handleInputChange('employerName', e.target.value)}
-                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                        placeholder="Enter employer name"
-                      />
-                      <p className="mt-1 text-xs text-gray-500">Current employer's name</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-1">Length of Employment</label>
-                      <input
-                        type="text"
-                        value={formData.employmentLength}
-                        onChange={(e) => handleInputChange('employmentLength', e.target.value)}
-                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                        placeholder="e.g., 5 years"
-                      />
-                      <p className="mt-1 text-xs text-gray-500">How long have you been with current employer</p>
-                    </div>
-                  </>
+            )}
+          </div>
+
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="text-sm text-gray-500 mb-1">Email</div>
+            {isEditing ? (
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                className="w-full bg-white px-2 py-1 rounded border-gray-200 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter email"
+              />
+            ) : (
+              <div className="text-sm font-medium text-gray-900">
+                {request?.borrowerInfo?.email || 'Not provided'}
+              </div>
+            )}
+          </div>
+
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="text-sm text-gray-500 mb-1">Phone</div>
+            {isEditing ? (
+              <input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => handleInputChange('phone', e.target.value)}
+                className="w-full bg-white px-2 py-1 rounded border-gray-200 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="(XXX) XXX-XXXX"
+              />
+            ) : (
+              <div className="text-sm font-medium text-gray-900">
+                {request?.borrowerInfo?.phone || 'Not provided'}
+              </div>
+            )}
+          </div>
+
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="text-sm text-gray-500 mb-1">Credit Score</div>
+            {isEditing ? (
+              <div>
+                <input
+                  type="text"
+                  value={formData.creditScore}
+                  onChange={(e) => handleInputChange('creditScore', e.target.value)}
+                  className={`w-full bg-white px-2 py-1 rounded border-gray-200 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${
+                    formData.creditScore && (!isNaN(Number(formData.creditScore)) && (Number(formData.creditScore) < 300 || Number(formData.creditScore) > 850)) 
+                    ? 'border-red-300' 
+                    : ''
+                  }`}
+                  placeholder="300-850"
+                />
+                {formData.creditScore && (!isNaN(Number(formData.creditScore)) && (Number(formData.creditScore) < 300 || Number(formData.creditScore) > 850)) && (
+                  <div className="text-xs text-red-500 mt-1">Score must be 300-850</div>
                 )}
               </div>
-            </>
-          ) : (
-            <>
-              <div className="space-y-6">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm font-medium text-gray-500 mb-1">Name</p>
-                  <p className="text-base font-semibold text-gray-900">
-                    {request?.borrowerName || <span className="text-gray-400 italic">Not provided</span>}
-                  </p>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm font-medium text-gray-500 mb-1">Email</p>
-                  <p className="text-base font-semibold text-gray-900">
-                    {request?.borrowerInfo?.email || <span className="text-gray-400 italic">Not provided</span>}
-                  </p>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm font-medium text-gray-500 mb-1">Phone</p>
-                  <p className="text-base font-semibold text-gray-900">
-                    {request?.borrowerInfo?.phone || <span className="text-gray-400 italic">Not provided</span>}
-                  </p>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm font-medium text-gray-500 mb-1">Credit Score</p>
-                  <p className="text-base font-semibold text-gray-900">
-                    {request?.borrowerInfo?.creditScore || <span className="text-gray-400 italic">Not provided</span>}
-                  </p>
-                </div>
+            ) : (
+              <div className="text-sm font-medium text-gray-900">
+                {request?.borrowerInfo?.creditScore || 'Not provided'}
               </div>
-              <div className="space-y-6">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm font-medium text-gray-500 mb-1">Annual Income</p>
-                  <p className="text-base font-semibold text-gray-900">
-                    {request?.borrowerInfo?.annualIncome ? 
-                      `$${request.borrowerInfo.annualIncome.toLocaleString()}` : 
-                      <span className="text-gray-400 italic">Not provided</span>
-                    }
-                  </p>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm font-medium text-gray-500 mb-1">Employment Status</p>
-                  <p className="text-base font-semibold text-gray-900 capitalize">
-                    {request?.borrowerInfo?.employmentStatus || <span className="text-gray-400 italic">Not provided</span>}
-                  </p>
-                </div>
-                {(request?.borrowerInfo?.employmentStatus === 'employed' || request?.borrowerInfo?.employmentStatus === 'self-employed') && (
-                  <>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-sm font-medium text-gray-500 mb-1">Employer Name</p>
-                      <p className="text-base font-semibold text-gray-900">
-                        {request?.borrowerInfo?.employerName || <span className="text-gray-400 italic">Not provided</span>}
-                      </p>
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-sm font-medium text-gray-500 mb-1">Length of Employment</p>
-                      <p className="text-base font-semibold text-gray-900">
-                        {request?.borrowerInfo?.employmentLength || <span className="text-gray-400 italic">Not provided</span>}
-                      </p>
-                    </div>
-                  </>
-                )}
-              </div>
-            </>
-          )}
+            )}
+          </div>
         </div>
+
+        {isEditing && (
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={handleSave}
+              className="inline-flex items-center px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-lg text-sm text-blue-600 hover:bg-blue-100 transition-all duration-200"
+            >
+              <CheckIcon className="h-4 w-4 mr-1" />
+              Save Changes
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Document Management */}

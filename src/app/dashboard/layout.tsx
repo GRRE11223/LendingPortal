@@ -32,6 +32,7 @@ const navigation: NavigationItem[] = [
   { name: 'Documents', href: '/dashboard/documents', icon: DocumentTextIcon },
   { name: 'Team', href: '/dashboard/team', icon: UsersIcon },
   { name: 'Settings', href: '/dashboard/settings', icon: Cog6ToothIcon },
+  { name: 'Trash', href: '/dashboard/trash', icon: TrashIcon },
 ];
 
 function classNames(...classes: string[]) {

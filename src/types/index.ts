@@ -40,8 +40,20 @@ export interface LoanRequest {
   createdAt: string;
   updatedAt: string;
   type: string;
-  loanAmount: number;
-  propertyAddress: string;
+  loan: {
+    amount: number;
+    term: number;
+    rate: number;
+    purpose: string;
+    type: string;
+  };
+  propertyAddress: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    fullAddress: string;
+  };
   escrowInfo: {
     officerName: string;
     email: string;

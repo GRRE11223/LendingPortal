@@ -14,6 +14,9 @@ import {
   ClipboardDocumentCheckIcon,
   ExclamationCircleIcon,
   TrashIcon,
+  EyeIcon,
+  UserIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 import BorrowerModule from '../../../components/BorrowerModule';
 import EscrowTitleModule from '../../../components/EscrowTitleModule';
@@ -38,6 +41,10 @@ export default function LoanRequestDetail() {
   const [underwritingProgress, setUnderwritingProgress] = useState(0);
   const [activeSection, setActiveSection] = useState<'escrow' | 'title'>('escrow');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showOriginalRequest, setShowOriginalRequest] = useState(false);
+  const [activeFolder, setActiveFolder] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<any | null>(null);
+  const [showFilePreview, setShowFilePreview] = useState(false);
 
   useEffect(() => {
     const fetchRequest = () => {
@@ -243,19 +250,21 @@ export default function LoanRequestDetail() {
   const handleDelete = () => {
     if (!request) return;
 
-    // 获取当前回收站中的 loans
+    // Get current items in trash
     const trashStr = localStorage.getItem('trashLoanRequests');
     const trashLoans = trashStr ? JSON.parse(trashStr) : [];
 
-    // 将当前 loan 添加到回收站
+    // Add current loan to trash with metadata
     const trashLoan = {
       ...request,
-      deletedAt: new Date().toISOString()
+      deletedAt: new Date().toISOString(),
+      originalId: request.id,
+      canRestore: true
     };
     trashLoans.push(trashLoan);
     localStorage.setItem('trashLoanRequests', JSON.stringify(trashLoans));
 
-    // 从活动 loans 列表中删除
+    // Remove from active loan requests
     const storedRequests = localStorage.getItem('loanRequests');
     if (storedRequests) {
       const requests = JSON.parse(storedRequests);
@@ -263,11 +272,20 @@ export default function LoanRequestDetail() {
       localStorage.setItem('loanRequests', JSON.stringify(updatedRequests));
     }
 
-    // 删除单独存储的 request 详情
+    // Remove individual request details
     localStorage.removeItem(`request_${params.id}`);
 
-    // 重定向到 dashboard
+    // Redirect to dashboard
     router.push('/dashboard');
+  };
+
+  const handleFolderClick = (folder: string) => {
+    setActiveFolder(activeFolder === folder ? null : folder);
+  };
+
+  const handleFileClick = (file: any) => {
+    setSelectedFile(file);
+    setShowFilePreview(true);
   };
 
   if (loading) {
@@ -294,40 +312,383 @@ export default function LoanRequestDetail() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* 添加删除按钮 */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">
           Loan Request Details
         </h1>
-        <button
-          onClick={() => setShowDeleteConfirm(true)}
-          className="px-4 py-2 text-red-600 hover:text-red-800 flex items-center space-x-2"
-        >
-          <TrashIcon className="h-5 w-5" />
-          <span>删除</span>
-        </button>
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={() => setShowOriginalRequest(true)}
+            className="px-4 py-2 text-blue-600 hover:text-blue-800 flex items-center space-x-2"
+          >
+            <EyeIcon className="h-5 w-5" />
+            <span>View Original Request</span>
+          </button>
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="px-4 py-2 text-red-600 hover:text-red-800 flex items-center space-x-2"
+          >
+            <TrashIcon className="h-5 w-5" />
+            <span>Delete</span>
+          </button>
+        </div>
       </div>
 
-      {/* 删除确认对话框 */}
+      {/* Original Request Modal */}
+      {showOriginalRequest && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            {/* Header */}
+            <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-blue-50 to-white">
+              <h3 className="text-2xl font-semibold text-gray-800">Original Loan Request</h3>
+              <button
+                onClick={() => setShowOriginalRequest(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <XCircleIcon className="h-7 w-7" />
+              </button>
+            </div>
+            
+            <div className="p-8 overflow-y-auto max-h-[calc(90vh-5rem)]">
+              {/* Borrower Information */}
+              <div className="mb-10">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center">
+                    <ChatBubbleLeftRightIcon className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <h4 className="text-xl font-medium text-gray-800">Borrower Information</h4>
+                </div>
+                <div className="grid grid-cols-3 gap-6 bg-gray-50 rounded-xl p-6">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 mb-1">Legal Name</p>
+                    <p className="text-base font-medium text-gray-900">{request.borrowerName}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 mb-1">Email</p>
+                    <p className="text-base font-medium text-gray-900">{request.borrowerInfo.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 mb-1">Phone</p>
+                    <p className="text-base font-medium text-gray-900">{request.borrowerInfo.phone}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Loan Information */}
+              <div className="mb-10">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="h-10 w-10 rounded-full bg-green-50 flex items-center justify-center">
+                    <CurrencyDollarIcon className="h-5 w-5 text-green-600" />
+                  </div>
+                  <h4 className="text-xl font-medium text-gray-800">Loan Information</h4>
+                </div>
+                
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-6 bg-gray-50 rounded-xl p-6">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 mb-1">Property Address</p>
+                      <div className="flex items-start gap-2">
+                        <MapPinIcon className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <p className="text-base font-medium text-gray-900">{request.loan.propertyAddress.fullAddress}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 mb-1">Property Type</p>
+                      <p className="text-base font-medium text-gray-900 capitalize">{request.loan.propertyType}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-6 bg-gray-50 rounded-xl p-6">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 mb-1">Property Value</p>
+                      <p className="text-base font-medium text-gray-900">${request.loan.propertyValue.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 mb-1">Loan Amount</p>
+                      <p className="text-base font-medium text-gray-900">${request.loan.loanAmount.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 mb-1">LTV</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-base font-medium text-gray-900">{request.loan.ltv}%</span>
+                        <div className="h-2 w-20 bg-gray-200 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-blue-600 rounded-full" 
+                            style={{ width: `${request.loan.ltv}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-6 bg-gray-50 rounded-xl p-6">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 mb-1">Loan Purpose</p>
+                      <p className="text-base font-medium text-gray-900 capitalize">{request.loan.loanPurpose}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 mb-1">Loan Program</p>
+                      <p className="text-base font-medium text-gray-900 capitalize">{request.loan.loanProgram}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 mb-1">Target Funding Date</p>
+                      <p className="text-base font-medium text-gray-900">{request.loan.targetFundingDate}</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 rounded-xl p-6">
+                    <p className="text-sm font-medium text-gray-500 mb-1">Loan Intention</p>
+                    <p className="text-base font-medium text-gray-900">{request.loan.loanIntention}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Other Information */}
+              <div className="mb-10">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="h-10 w-10 rounded-full bg-purple-50 flex items-center justify-center">
+                    <DocumentIcon className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <h4 className="text-xl font-medium text-gray-800">Other Information</h4>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-6 bg-gray-50 rounded-xl p-6">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 mb-1">Escrow Email</p>
+                      <p className="text-base font-medium text-gray-900">
+                        {request.escrowInfo?.email || 'TBD'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 mb-1">Insurance Email</p>
+                      <p className="text-base font-medium text-gray-900">
+                        {request.escrowInfo?.insuranceEmail || 'TBD'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Originator Information */}
+              <div className="mb-10">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="h-10 w-10 rounded-full bg-green-50 flex items-center justify-center">
+                    <UserIcon className="h-5 w-5 text-green-600" />
+                  </div>
+                  <h4 className="text-xl font-medium text-gray-800">Originator Information</h4>
+                </div>
+
+                <div className="grid grid-cols-2 gap-6 bg-gray-50 rounded-xl p-6">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 mb-1">Originator</p>
+                    <p className="text-base font-medium text-gray-900">{request.loan?.originator || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 mb-1">Created At</p>
+                    <p className="text-base font-medium text-gray-900">
+                      {new Date(request.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Initial File Submission */}
+              <div className="mb-10">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center">
+                    <PaperClipIcon className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <h4 className="text-xl font-medium text-gray-800">Initial File Submission</h4>
+                </div>
+
+                <div className="grid grid-cols-12 gap-6">
+                  {/* Folders List */}
+                  <div className="col-span-4 bg-gray-50 rounded-xl p-6">
+                    <div className="text-sm font-medium text-gray-700 mb-4">Folders</div>
+                    <div className="space-y-4">
+                      <div 
+                        className={`flex items-center justify-between p-2 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors ${activeFolder === 'id' ? 'bg-gray-100' : ''}`}
+                        onClick={() => handleFolderClick('id')}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-gray-400">📄</span>
+                          <span className="text-sm text-gray-600">ID</span>
+                        </div>
+                        <span className="text-sm text-gray-500">
+                          {request.escrow?.initialFileSubmission?.filter(file => file.folder === 'id').length || 0}
+                        </span>
+                      </div>
+
+                      <div 
+                        className={`flex items-center justify-between p-2 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors ${activeFolder === 'bankStatement' ? 'bg-gray-100' : ''}`}
+                        onClick={() => handleFolderClick('bankStatement')}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-gray-400">🏦</span>
+                          <span className="text-sm text-gray-600">Bank Statement</span>
+                        </div>
+                        <span className="text-sm text-gray-500">
+                          {request.escrow?.initialFileSubmission?.filter(file => file.folder === 'bankStatement').length || 0}
+                        </span>
+                      </div>
+
+                      <div 
+                        className={`flex items-center justify-between p-2 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors ${activeFolder === 'loanApplication' ? 'bg-gray-100' : ''}`}
+                        onClick={() => handleFolderClick('loanApplication')}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-gray-400">📝</span>
+                          <span className="text-sm text-gray-600">Loan Application</span>
+                        </div>
+                        <span className="text-sm text-gray-500">
+                          {request.escrow?.initialFileSubmission?.filter(file => file.folder === 'loanApplication').length || 0}
+                        </span>
+                      </div>
+
+                      <div 
+                        className={`flex items-center justify-between p-2 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors ${activeFolder === 'creditReport' ? 'bg-gray-100' : ''}`}
+                        onClick={() => handleFolderClick('creditReport')}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-gray-400">📊</span>
+                          <span className="text-sm text-gray-600">Credit Report</span>
+                        </div>
+                        <span className="text-sm text-gray-500">
+                          {request.escrow?.initialFileSubmission?.filter(file => file.folder === 'creditReport').length || 0}
+                        </span>
+                      </div>
+
+                      <div 
+                        className={`flex items-center justify-between p-2 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors ${activeFolder === 'insurance' ? 'bg-gray-100' : ''}`}
+                        onClick={() => handleFolderClick('insurance')}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-gray-400">🔒</span>
+                          <span className="text-sm text-gray-600">Insurance</span>
+                        </div>
+                        <span className="text-sm text-gray-500">
+                          {request.escrow?.initialFileSubmission?.filter(file => file.folder === 'insurance').length || 0}
+                        </span>
+                      </div>
+
+                      <div 
+                        className={`flex items-center justify-between p-2 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors ${activeFolder === 'existingMortgage' ? 'bg-gray-100' : ''}`}
+                        onClick={() => handleFolderClick('existingMortgage')}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-gray-400">🏠</span>
+                          <span className="text-sm text-gray-600">Existing Mortgage Statement</span>
+                        </div>
+                        <span className="text-sm text-gray-500">
+                          {request.escrow?.initialFileSubmission?.filter(file => file.folder === 'existingMortgage').length || 0}
+                        </span>
+                      </div>
+
+                      <div 
+                        className={`flex items-center justify-between p-2 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors ${activeFolder === 'others' ? 'bg-gray-100' : ''}`}
+                        onClick={() => handleFolderClick('others')}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-gray-400">📁</span>
+                          <span className="text-sm text-gray-600">Others</span>
+                        </div>
+                        <span className="text-sm text-gray-500">
+                          {request.escrow?.initialFileSubmission?.filter(file => file.folder === 'others').length || 0}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Document List */}
+                  <div className="col-span-8">
+                    {request.escrow?.initialFileSubmission && request.escrow.initialFileSubmission.length > 0 ? (
+                      <div className="bg-white rounded-xl border border-gray-200">
+                        <div className="divide-y divide-gray-100">
+                          {request.escrow.initialFileSubmission
+                            .filter(file => !activeFolder || file.folder === activeFolder)
+                            .map((file) => (
+                              <div 
+                                key={file.name} 
+                                className="p-4 hover:bg-gray-50 cursor-pointer"
+                                onClick={() => handleFileClick(file)}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-3">
+                                    <DocumentIcon className="h-5 w-5 text-gray-400" />
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-900">{file.name}</p>
+                                      <p className="text-xs text-gray-500">{file.folder}</p>
+                                    </div>
+                                  </div>
+                                  <EyeIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                                </div>
+                              </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full bg-gray-50 rounded-xl p-8">
+                        <DocumentIcon className="h-12 w-12 text-gray-400 mb-3" />
+                        <h3 className="text-sm font-medium text-gray-900">No documents</h3>
+                        <p className="text-sm text-gray-500 text-center mt-1">
+                          {activeFolder ? 'No documents in this folder' : 'No documents have been uploaded yet'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* File Preview Modal */}
+              {showFilePreview && selectedFile && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
+                  <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+                    <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+                      <h3 className="text-lg font-medium text-gray-900">{selectedFile.name}</h3>
+                      <button
+                        onClick={() => setShowFilePreview(false)}
+                        className="text-gray-400 hover:text-gray-500"
+                      >
+                        <XMarkIcon className="h-6 w-6" />
+                      </button>
+                    </div>
+                    <div className="p-4 overflow-auto max-h-[calc(90vh-8rem)]">
+                      {/* Add your file preview component here */}
+                      <iframe
+                        src={selectedFile.url}
+                        className="w-full h-[70vh]"
+                        title={selectedFile.name}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">确认删除</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Confirm Delete</h3>
             <p className="text-gray-500 mb-6">
-              此操作将把该贷款申请移动到回收站。您可以稍后从回收站恢复或永久删除它。
+              This loan request will be moved to the trash. You can restore or permanently delete it later from the trash.
             </p>
             <div className="flex justify-end space-x-4">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 rounded"
               >
-                取消
+                Cancel
               </button>
               <button
                 onClick={handleDelete}
                 className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
               >
-                删除
+                Move to Trash
               </button>
             </div>
           </div>

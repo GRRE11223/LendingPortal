@@ -34,6 +34,7 @@
     "@types/react": "^18.2.66",
     "@types/react-beautiful-dnd": "^13.1.8",
     "@types/react-dom": "^18.2.22",
+    "@types/uuid": "^10.0.0",
     "autoprefixer": "^10.4.18",
     "postcss": "^8.4.35"
   }

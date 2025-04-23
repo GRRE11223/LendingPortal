@@ -15,6 +15,7 @@ import {
   ChatBubbleLeftIcon,
   ClipboardDocumentCheckIcon,
   ExclamationCircleIcon,
+  PencilIcon,
 } from '@heroicons/react/24/outline';
 import { Document, LoanRequest } from '@/types';
 
@@ -43,6 +44,11 @@ export default function EscrowTitleModule({
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
   const [comment, setComment] = useState('');
   const [dragActive, setDragActive] = useState(false);
+  const [formData, setFormData] = useState({
+    officerName: request?.[`${activeSection}Info`]?.officerName || '',
+    email: request?.[`${activeSection}Info`]?.email || '',
+    phone: request?.[`${activeSection}Info`]?.phone || '',
+  });
 
   const categories = activeSection === 'escrow' ? [
     { id: 'escrow-agreement', name: 'Escrow Agreement', required: true },
@@ -191,6 +197,10 @@ export default function EscrowTitleModule({
     }
   };
 
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
   return (
     <div className="space-y-6">
       {/* Section Tabs */}
@@ -226,58 +236,99 @@ export default function EscrowTitleModule({
       </div>
 
       {/* Officer Information */}
-      <div className="bg-white rounded-lg p-6 border border-gray-200">
+      <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-medium text-gray-900">
-            {activeSection === 'escrow' ? 'Escrow' : 'Title'} Officer Information
-          </h3>
-          {!isEditing ? (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              Edit
-            </button>
-          ) : (
-            <div className="space-x-2">
-              <button
-                onClick={() => setIsEditing(false)}
-                className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900">
+              {activeSection === 'escrow' ? 'Escrow' : 'Title'} Officer Information
+            </h3>
+            <p className="text-sm text-gray-500 mt-1">Manage officer's contact details</p>
+          </div>
+          <button
+            onClick={() => setIsEditing(!isEditing)}
+            className="inline-flex items-center px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-all duration-200"
+          >
+            {isEditing ? (
+              <>
+                <XMarkIcon className="h-4 w-4 mr-1" />
                 Cancel
-              </button>
-              <button
-                onClick={() => {
-                  onInfoUpdate(request?.[`${activeSection}Info`], activeSection);
-                  setIsEditing(false);
-                }}
-                className="px-4 py-2 bg-blue-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-blue-700"
-              >
-                Save
-              </button>
-            </div>
-          )}
+              </>
+            ) : (
+              <>
+                <PencilIcon className="h-4 w-4 mr-1" />
+                Edit Details
+              </>
+            )}
+          </button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Officer Name</label>
-            <p className="mt-1 text-sm text-gray-900">
-              {request?.[`${activeSection}Info`]?.officerName || 'Not assigned'}
-            </p>
+
+        <div className="grid grid-cols-3 gap-6">
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="text-sm text-gray-500 mb-1">Officer Name</div>
+            {isEditing ? (
+              <input
+                type="text"
+                value={formData.officerName}
+                onChange={(e) => handleInputChange('officerName', e.target.value)}
+                className="w-full bg-white px-2 py-1 rounded border-gray-200 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter name"
+              />
+            ) : (
+              <div className="text-sm font-medium text-gray-900">
+                {request?.[`${activeSection}Info`]?.officerName || 'Not assigned'}
+              </div>
+            )}
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
-            <p className="mt-1 text-sm text-gray-900">
-              {request?.[`${activeSection}Info`]?.email || 'Not available'}
-            </p>
+
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="text-sm text-gray-500 mb-1">Email</div>
+            {isEditing ? (
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                className="w-full bg-white px-2 py-1 rounded border-gray-200 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter email"
+              />
+            ) : (
+              <div className="text-sm font-medium text-gray-900">
+                {request?.[`${activeSection}Info`]?.email || 'Not available'}
+              </div>
+            )}
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Phone</label>
-            <p className="mt-1 text-sm text-gray-900">
-              {request?.[`${activeSection}Info`]?.phone || 'Not available'}
-            </p>
+
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="text-sm text-gray-500 mb-1">Phone</div>
+            {isEditing ? (
+              <input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => handleInputChange('phone', e.target.value)}
+                className="w-full bg-white px-2 py-1 rounded border-gray-200 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="(XXX) XXX-XXXX"
+              />
+            ) : (
+              <div className="text-sm font-medium text-gray-900">
+                {request?.[`${activeSection}Info`]?.phone || 'Not available'}
+              </div>
+            )}
           </div>
         </div>
+
+        {isEditing && (
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={() => {
+                onInfoUpdate(request?.[`${activeSection}Info`], activeSection);
+                setIsEditing(false);
+              }}
+              className="inline-flex items-center px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-lg text-sm text-blue-600 hover:bg-blue-100 transition-all duration-200"
+            >
+              <CheckIcon className="h-4 w-4 mr-1" />
+              Save Changes
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Progress Tracking */}
