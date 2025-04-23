@@ -389,7 +389,7 @@ export default function LoanRequestDetail() {
                       <p className="text-sm font-medium text-gray-500 mb-1">Property Address</p>
                       <div className="flex items-start gap-2">
                         <MapPinIcon className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
-                        <p className="text-base font-medium text-gray-900">{request.loan.propertyAddress.fullAddress}</p>
+                        <p className="text-base font-medium text-gray-900">{request.propertyAddress.fullAddress}</p>
                       </div>
                     </div>
                     <div>

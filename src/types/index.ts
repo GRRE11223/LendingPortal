@@ -46,6 +46,15 @@ export interface LoanRequest {
     rate: number;
     purpose: string;
     type: string;
+    propertyType: string;
+    propertyValue: number;
+    loanAmount: number;
+    ltv: number;
+    loanPurpose: string;
+    loanProgram: string;
+    targetFundingDate: string;
+    loanIntention: string;
+    originator?: string;
   };
   propertyAddress: {
     street: string;
@@ -54,10 +63,18 @@ export interface LoanRequest {
     zipCode: string;
     fullAddress: string;
   };
+  escrow: {
+    initialFileSubmission: Array<{
+      name: string;
+      folder: string;
+      url: string;
+    }>;
+  };
   escrowInfo: {
     officerName: string;
     email: string;
     phone: string;
+    insuranceEmail?: string;
     documents: Document[];
   };
   titleInfo: {
