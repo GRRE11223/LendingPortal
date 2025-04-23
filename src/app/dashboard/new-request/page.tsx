@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface LoanRequest {
@@ -153,64 +153,116 @@ export default function NewRequest() {
   const [draggedFile, setDraggedFile] = useState<number | null>(null);
   const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
 
-  // Format number for display with two decimal places
-  const formatNumber = (value: string) => {
-    if (!value) return '';
-    // If the user is currently typing (has a decimal point at the end), return as is
-    if (value.endsWith('.')) return value;
-    // If the user is typing decimal places, return as is
-    if (value.includes('.') && value.split('.')[1].length <= 2) return value;
-    
-    const number = parseFloat(value);
-    if (isNaN(number)) return '';
-    return number.toFixed(2);
-  };
+  const formatter = new Intl.NumberFormat('en-US', {
+    style: 'decimal',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 
-  // Parse formatted number back to plain number
-  const parseFormattedNumber = (value: string) => {
-    if (!value) return '';
-    return value.replace(/,/g, '');
-  };
+  const parseNumber = (val: string) => parseFloat(val.toString().replace(/,/g, '')) || 0;
 
-  const formatNumberWithCommas = (value: string) => {
-    if (!value) return '';
-    // Remove existing commas and handle decimal part
-    const parts = value.replace(/,/g, '').split('.');
-    const wholePart = parts[0];
-    const decimalPart = parts[1] || '00';
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
     
-    // Add commas to whole part
-    const formattedWholePart = wholePart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    
-    // Ensure exactly two decimal places
-    const formattedDecimalPart = decimalPart.padEnd(2, '0').slice(0, 2);
-    
-    return `${formattedWholePart}.${formattedDecimalPart}`;
-  };
-
-  // Handle LTV and Loan Amount calculations
-  useEffect(() => {
-    if (formData.loan.propertyValue) {
-      const propertyValue = parseFloat(formData.loan.propertyValue.replace(/,/g, ''));
-      
-      if (formData.loan.loanAmount && !formData.loan.ltv) {
-        // Calculate LTV from Loan Amount
-        const loanAmount = parseFloat(formData.loan.loanAmount.replace(/,/g, ''));
-        if (propertyValue > 0) {
-          const calculatedLtv = ((loanAmount / propertyValue) * 100).toFixed(2);
-          if (!isNaN(parseFloat(calculatedLtv)) && parseFloat(calculatedLtv) <= 100) {
-            setFormData(prev => ({ 
-              ...prev, 
-              loan: {
-                ...prev.loan,
-                ltv: calculatedLtv 
-              }
-            }));
-          }
+    if (name === 'loan.propertyValue') {
+      setFormData(prev => ({
+        ...prev,
+        loan: {
+          ...prev.loan,
+          propertyValue: value,
+          loanAmount: '',
+          ltv: ''
         }
-      }
+      }));
+    } 
+    else if (name === 'loan.loanAmount') {
+      const loan = parseNumber(value);
+      const pv = parseNumber(formData.loan.propertyValue);
+      
+      setFormData(prev => ({
+        ...prev,
+        loan: {
+          ...prev.loan,
+          loanAmount: value,
+          ...(pv > 0 ? { ltv: formatter.format((loan / pv) * 100) } : {})
+        }
+      }));
     }
-  }, [formData.loan.propertyValue, formData.loan.loanAmount]);
+    else if (name === 'loan.ltv') {
+      const ltv = parseNumber(value);
+      const pv = parseNumber(formData.loan.propertyValue);
+      
+      if (ltv > 100) {
+        setLtvError('LTV cannot exceed 100%');
+        return;
+      }
+      setLtvError('');
+      
+      setFormData(prev => ({
+        ...prev,
+        loan: {
+          ...prev.loan,
+          ltv: value,
+          ...(pv > 0 ? { loanAmount: formatter.format((pv * ltv) / 100) } : {})
+        }
+      }));
+    }
+    else {
+      const [section, field] = name.split('.');
+      setFormData(prev => ({
+        ...prev,
+        [section]: {
+          ...prev[section as keyof typeof prev],
+          [field]: value
+        }
+      }));
+    }
+  };
+
+  const handlePropertyValueBlur = () => {
+    const pv = parseNumber(formData.loan.propertyValue);
+    setFormData(prev => ({
+      ...prev,
+      loan: {
+        ...prev.loan,
+        propertyValue: formatter.format(pv)
+      }
+    }));
+  };
+
+  const handleLoanAmountBlur = () => {
+    const loan = parseNumber(formData.loan.loanAmount);
+    setFormData(prev => ({
+      ...prev,
+      loan: {
+        ...prev.loan,
+        loanAmount: formatter.format(loan)
+      }
+    }));
+  };
+
+  const handleLtvBlur = () => {
+    const ltv = parseNumber(formData.loan.ltv);
+    if (ltv > 100) {
+      setLtvError('LTV cannot exceed 100%');
+      setFormData(prev => ({
+        ...prev,
+        loan: {
+          ...prev.loan,
+          ltv: '100.00'
+        }
+      }));
+    } else {
+      setLtvError('');
+      setFormData(prev => ({
+        ...prev,
+        loan: {
+          ...prev.loan,
+          ltv: formatter.format(ltv)
+        }
+      }));
+    }
+  };
 
   // Function to parse address
   const parseAddress = (fullAddress: string) => {
@@ -311,78 +363,6 @@ export default function NewRequest() {
     return value;
   };
 
-  // Modify handleChange to include validation
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    
-    // 处理 Borrower Email
-    if (name === 'borrower.email') {
-      setFormData(prev => ({
-        ...prev,
-        borrower: {
-          ...prev.borrower,
-          email: value
-        }
-      }));
-      setValidationErrors(prev => ({
-        ...prev,
-        email: validateEmail(value)
-      }));
-    }
-    // 处理 Escrow Email
-    else if (name === 'escrow.email') {
-      setFormData(prev => ({
-        ...prev,
-        escrow: {
-          ...prev.escrow,
-          email: value
-        }
-      }));
-      setValidationErrors(prev => ({
-        ...prev,
-        escrowEmail: validateEmail(value)
-      }));
-    }
-    // 处理 Insurance Email
-    else if (name === 'escrow.insuranceEmail') {
-      setFormData(prev => ({
-        ...prev,
-        escrow: {
-          ...prev.escrow,
-          insuranceEmail: value
-        }
-      }));
-      setValidationErrors(prev => ({
-        ...prev,
-        insuranceEmail: validateEmail(value)
-      }));
-    }
-    // 处理 Contact Number
-    else if (name === 'borrower.contactNumber') {
-      const formattedNumber = formatPhoneNumber(value);
-      const error = validatePhoneNumber(formattedNumber);
-      setValidationErrors(prev => ({ ...prev, contactNumber: error }));
-      setFormData(prev => ({
-        ...prev,
-        borrower: {
-          ...prev.borrower,
-          contactNumber: formattedNumber
-        }
-      }));
-    }
-    // 处理其他字段
-    else {
-      const [section, field] = name.split('.');
-      setFormData(prev => ({
-        ...prev,
-        [section]: {
-          ...prev[section as keyof typeof prev],
-          [field]: value
-        }
-      }));
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -402,9 +382,9 @@ export default function NewRequest() {
           documents: []
         },
         loan: {
-          propertyValue: parseFloat(parseFormattedNumber(formData.loan.propertyValue)),
-          loanAmount: parseFloat(parseFormattedNumber(formData.loan.loanAmount)),
-          ltv: parseFloat(formData.loan.ltv),
+          propertyValue: parseNumber(formData.loan.propertyValue),
+          loanAmount: parseNumber(formData.loan.loanAmount),
+          ltv: parseNumber(formData.loan.ltv),
           propertyAddress: formData.loan.propertyAddress,
           loanPurpose: formData.loan.loanPurpose,
           propertyType: formData.loan.propertyType,
@@ -784,23 +764,7 @@ export default function NewRequest() {
                           name="loan.propertyValue"
                           value={formData.loan.propertyValue}
                           onChange={handleChange}
-                          onBlur={(e) => {
-                            const value = e.target.value;
-                            if (value) {
-                              const cleanValue = value.replace(/,/g, '');
-                              const number = parseFloat(cleanValue);
-                              if (!isNaN(number)) {
-                                const formatted = formatNumberWithCommas(number.toFixed(2));
-                                setFormData(prev => ({
-                                  ...prev,
-                                  loan: {
-                                    ...prev.loan,
-                                    propertyValue: formatted
-                                  }
-                                }));
-                              }
-                            }
-                          }}
+                          onBlur={handlePropertyValueBlur}
                           required
                           className="block w-full pl-8 pr-4 py-3 bg-gray-50 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 text-sm hover:bg-white"
                           placeholder="Enter property value"
@@ -820,23 +784,7 @@ export default function NewRequest() {
                           name="loan.loanAmount"
                           value={formData.loan.loanAmount}
                           onChange={handleChange}
-                          onBlur={(e) => {
-                            const value = e.target.value;
-                            if (value) {
-                              const cleanValue = value.replace(/,/g, '');
-                              const number = parseFloat(cleanValue);
-                              if (!isNaN(number)) {
-                                const formatted = formatNumberWithCommas(number.toFixed(2));
-                                setFormData(prev => ({
-                                  ...prev,
-                                  loan: {
-                                    ...prev.loan,
-                                    loanAmount: formatted
-                                  }
-                                }));
-                              }
-                            }
-                          }}
+                          onBlur={handleLoanAmountBlur}
                           className="block w-full pl-8 pr-4 py-3 bg-gray-50 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 text-sm hover:bg-white"
                           placeholder="Enter loan amount"
                         />
@@ -852,23 +800,7 @@ export default function NewRequest() {
                           name="loan.ltv"
                           value={formData.loan.ltv}
                           onChange={handleChange}
-                          onBlur={(e) => {
-                            const value = e.target.value;
-                            if (value) {
-                              const number = parseFloat(value);
-                              if (!isNaN(number) && number <= 100) {
-                                setLtvError('');
-                                // 失去焦点时格式化为两位小数
-                                setFormData(prev => ({
-                                  ...prev,
-                                  loan: {
-                                    ...prev.loan,
-                                    ltv: number.toFixed(2)
-                                  }
-                                }));
-                              }
-                            }
-                          }}
+                          onBlur={handleLtvBlur}
                           className={`block w-full px-4 py-3 bg-gray-50 rounded-lg border ${ltvError ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 ${ltvError ? 'focus:ring-red-500' : 'focus:ring-blue-500'} focus:border-transparent transition-all duration-200 text-gray-900 text-sm hover:bg-white pr-8`}
                           placeholder="Enter LTV"
                         />
