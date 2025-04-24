@@ -23,7 +23,7 @@ import EscrowTitleModule from '../../../components/EscrowTitleModule';
 import UnderwritingModule from '../../../components/UnderwritingModule';
 import PreFundingModule from '../../../components/PreFundingModule';
 import PostFundingModule from '../../../components/PostFundingModule';
-import DocumentPreviewModal from '../../../components/DocumentPreviewModal';
+import DocumentPreviewModal from '@/app/components/DocumentPreviewModal';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../../components/ui/tabs';
 import { Document, LoanRequest } from '@/types';
 
@@ -45,6 +45,7 @@ export default function LoanRequestDetail() {
   const [activeFolder, setActiveFolder] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<any | null>(null);
   const [showFilePreview, setShowFilePreview] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<{ url: string; fileName: string } | null>(null);
 
   useEffect(() => {
     const fetchRequest = () => {
@@ -90,6 +91,10 @@ export default function LoanRequestDetail() {
       id: Math.random().toString(36).substring(7),
       category,
       name: file.name,
+      fileName: file.name,
+      url: URL.createObjectURL(file),
+      type: file.type,
+      uploadedAt: new Date().toISOString(),
       status: 'pending',
       versions: [{
         id: Math.random().toString(36).substring(7),
@@ -284,8 +289,16 @@ export default function LoanRequestDetail() {
   };
 
   const handleFileClick = (file: any) => {
-    setSelectedFile(file);
-    setShowFilePreview(true);
+    if (file.url) {
+      setSelectedFile(file);
+      setShowFilePreview(true);
+    } else {
+      console.error('File URL not found');
+    }
+  };
+
+  const handlePreviewDocument = (document: { url: string; fileName: string }) => {
+    setSelectedDocument(document);
   };
 
   if (loading) {
@@ -389,7 +402,9 @@ export default function LoanRequestDetail() {
                       <p className="text-sm font-medium text-gray-500 mb-1">Property Address</p>
                       <div className="flex items-start gap-2">
                         <MapPinIcon className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
-                        <p className="text-base font-medium text-gray-900">{request.propertyAddress.fullAddress}</p>
+                        <p className="text-base font-medium text-gray-900">
+                          {request?.propertyAddress?.fullAddress || 'Address not available'}
+                        </p>
                       </div>
                     </div>
                     <div>
@@ -642,27 +657,13 @@ export default function LoanRequestDetail() {
 
               {/* File Preview Modal */}
               {showFilePreview && selectedFile && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
-                  <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
-                    <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-                      <h3 className="text-lg font-medium text-gray-900">{selectedFile.name}</h3>
-                      <button
-                        onClick={() => setShowFilePreview(false)}
-                        className="text-gray-400 hover:text-gray-500"
-                      >
-                        <XMarkIcon className="h-6 w-6" />
-                      </button>
-                    </div>
-                    <div className="p-4 overflow-auto max-h-[calc(90vh-8rem)]">
-                      {/* Add your file preview component here */}
-                      <iframe
-                        src={selectedFile.url}
-                        className="w-full h-[70vh]"
-                        title={selectedFile.name}
-                      />
-                    </div>
-                  </div>
-                </div>
+                <DocumentPreviewModal
+                  document={{
+                    url: selectedFile.url,
+                    fileName: selectedFile.name
+                  }}
+                  onClose={() => setShowFilePreview(false)}
+                />
               )}
             </div>
           </div>
@@ -895,6 +896,13 @@ export default function LoanRequestDetail() {
           />
         </TabsContent>
       </Tabs>
+
+      {selectedDocument && (
+        <DocumentPreviewModal
+          document={selectedDocument}
+          onClose={() => setSelectedDocument(null)}
+        />
+      )}
     </div>
   );
 } 

@@ -19,6 +19,7 @@ import {
   PencilIcon,
 } from '@heroicons/react/24/outline';
 import { Document, LoanRequest, BorrowerInfo } from '@/types';
+import DocumentPreviewModal from './DocumentPreviewModal';
 
 interface BorrowerModuleProps {
   request: LoanRequest;
@@ -54,6 +55,7 @@ export default function BorrowerModule({
     employerName: request?.borrowerInfo?.employerName || '',
     employmentLength: request?.borrowerInfo?.employmentLength || '',
   });
+  const [selectedDocument, setSelectedDocument] = useState<{ url: string; fileName: string } | null>(null);
 
   const categories = [
     { id: 'id', name: 'Identification', required: true },
@@ -270,6 +272,13 @@ export default function BorrowerModule({
       setComment('');
       setSelectedDoc(null);
     }
+  };
+
+  const handlePreviewDocument = (document: Document) => {
+    setSelectedDocument({
+      url: document.url,
+      fileName: document.fileName
+    });
   };
 
   return (
@@ -609,7 +618,7 @@ export default function BorrowerModule({
                           </div>
                           <div className="w-32 flex justify-center space-x-2">
                             <button
-                              onClick={() => handlePreview(document)}
+                              onClick={() => handlePreviewDocument(document)}
                               className="p-1 text-blue-600 hover:bg-blue-50 rounded"
                               title="Preview"
                             >
@@ -729,6 +738,13 @@ export default function BorrowerModule({
             </button>
           </div>
         </div>
+      )}
+
+      {selectedDocument && (
+        <DocumentPreviewModal
+          document={selectedDocument}
+          onClose={() => setSelectedDocument(null)}
+        />
       )}
     </div>
   );

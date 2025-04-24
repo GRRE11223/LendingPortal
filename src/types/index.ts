@@ -1,8 +1,12 @@
 export interface Document {
   id: string;
+  url: string;
+  fileName: string;
+  type: string;
+  status: 'pending' | 'approved' | 'rejected';
+  uploadedAt: string;
   category: string;
   name: string;
-  status: 'pending' | 'approved' | 'rejected';
   section?: 'escrow' | 'title';
   versions: {
     id: string;

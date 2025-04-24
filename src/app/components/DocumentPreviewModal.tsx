@@ -1,16 +1,22 @@
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
 interface DocumentPreviewModalProps {
-  document: string;
+  document: {
+    url: string;
+    fileName: string;
+  };
   onClose: () => void;
 }
 
 export default function DocumentPreviewModal({ document, onClose }: DocumentPreviewModalProps) {
+  const isPDF = document.fileName.toLowerCase().endsWith('.pdf');
+  const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(document.fileName);
+
   return (
-    <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
         <div className="flex justify-between items-center p-4 border-b">
-          <h3 className="text-lg font-medium">Document Preview</h3>
+          <h3 className="text-lg font-medium">{document.fileName}</h3>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-500"
@@ -20,14 +26,23 @@ export default function DocumentPreviewModal({ document, onClose }: DocumentPrev
         </div>
         
         <div className="flex-1 p-4 overflow-auto">
-          {/* 这里可以根据文档类型显示不同的预览 */}
-          <div className="aspect-[8.5/11] bg-gray-100 rounded-lg flex items-center justify-center">
+          {isPDF ? (
             <iframe
-              src={document}
-              className="w-full h-full rounded-lg"
-              title="Document Preview"
+              src={document.url}
+              className="w-full h-[70vh] rounded-lg"
+              title={document.fileName}
             />
-          </div>
+          ) : isImage ? (
+            <img
+              src={document.url}
+              alt={document.fileName}
+              className="max-w-full max-h-[70vh] mx-auto object-contain"
+            />
+          ) : (
+            <div className="flex items-center justify-center h-[70vh] bg-gray-100 rounded-lg">
+              <p className="text-gray-500">Preview not available for this file type</p>
+            </div>
+          )}
         </div>
         
         <div className="p-4 border-t flex justify-end space-x-2">
@@ -37,11 +52,15 @@ export default function DocumentPreviewModal({ document, onClose }: DocumentPrev
           >
             Close
           </button>
-          <button
+          <a
+            href={document.url}
+            download={document.fileName}
+            target="_blank"
+            rel="noopener noreferrer"
             className="px-4 py-2 bg-blue-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-blue-700"
           >
             Download
-          </button>
+          </a>
         </div>
       </div>
     </div>

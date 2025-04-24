@@ -39,7 +39,10 @@ interface LoanRequest {
     insuranceEmail: string;
     initialFileSubmission: {
       name: string;
+      url: string;
       folder: string;
+      type: string;
+      size: number;
     }[];
     documents: any[];
     isTbdEscrowEmail: boolean;
@@ -57,7 +60,11 @@ interface LoanRequest {
 
 interface FileWithFolder {
   file: File;
+  name: string;
+  url: string;
   folder: string;
+  type: string;
+  size: number;
 }
 
 interface FormData {
@@ -163,56 +170,118 @@ export default function NewRequest() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    
-    if (name === 'loan.propertyValue') {
-      setFormData(prev => ({
-        ...prev,
-        loan: {
-          ...prev.loan,
-          propertyValue: value,
-          loanAmount: '',
-          ltv: ''
+    const [section, field] = name.split('.');
+
+    if (section === 'loan') {
+      if (field === 'propertyValue') {
+        // When property value changes, reset loan amount and LTV
+        setLtvError('');
+        setFormData(prev => ({
+          ...prev,
+          loan: {
+            ...prev.loan,
+            propertyValue: value,
+            loanAmount: '',
+            ltv: ''
+          }
+        }));
+      } 
+      else if (field === 'loanAmount') {
+        const loan = parseNumber(value);
+        const pv = parseNumber(formData.loan.propertyValue);
+        
+        if (pv > 0) {
+          const calculatedLtv = (loan / pv) * 100;
+          if (calculatedLtv > 100) {
+            setLtvError('LTV cannot exceed 100%');
+            return;
+          }
+          setLtvError('');
         }
-      }));
-    } 
-    else if (name === 'loan.loanAmount') {
-      const loan = parseNumber(value);
-      const pv = parseNumber(formData.loan.propertyValue);
-      
-      setFormData(prev => ({
-        ...prev,
-        loan: {
-          ...prev.loan,
-          loanAmount: value,
-          ...(pv > 0 ? { ltv: formatter.format((loan / pv) * 100) } : {})
-        }
-      }));
-    }
-    else if (name === 'loan.ltv') {
-      const ltv = parseNumber(value);
-      const pv = parseNumber(formData.loan.propertyValue);
-      
-      if (ltv > 100) {
-        setLtvError('LTV cannot exceed 100%');
-        return;
+
+        setFormData(prev => ({
+          ...prev,
+          loan: {
+            ...prev.loan,
+            loanAmount: value,
+            ...(pv > 0 ? { ltv: formatter.format((loan / pv) * 100) } : {})
+          }
+        }));
       }
-      setLtvError('');
-      
+      else if (field === 'ltv') {
+        const ltv = parseNumber(value);
+        const pv = parseNumber(formData.loan.propertyValue);
+        
+        if (ltv > 100) {
+          setLtvError('LTV cannot exceed 100%');
+          return;
+        }
+        setLtvError('');
+        
+        setFormData(prev => ({
+          ...prev,
+          loan: {
+            ...prev.loan,
+            ltv: value,
+            ...(pv > 0 ? { loanAmount: formatter.format((pv * ltv) / 100) } : {})
+          }
+        }));
+      }
+      else {
+        setFormData(prev => ({
+          ...prev,
+          loan: {
+            ...prev.loan,
+            [field]: value
+          }
+        }));
+      }
+    }
+    else if (section === 'borrower' && field && section in formData) {
+      let newValue = value;
+      let error = '';
+
+      if (field === 'email') {
+        error = validateEmail(value);
+        setValidationErrors(prev => ({ ...prev, email: error }));
+      } else if (field === 'contactNumber') {
+        newValue = formatPhoneNumber(value);
+        error = validatePhoneNumber(newValue);
+        setValidationErrors(prev => ({ ...prev, contactNumber: error }));
+      }
+
       setFormData(prev => ({
         ...prev,
-        loan: {
-          ...prev.loan,
-          ltv: value,
-          ...(pv > 0 ? { loanAmount: formatter.format((pv * ltv) / 100) } : {})
+        borrower: {
+          ...prev.borrower,
+          [field]: newValue
         }
       }));
     }
-    else {
-      const [section, field] = name.split('.');
+    else if (section === 'escrow' && field && section in formData) {
+      let error = '';
+      
+      if (field === 'email' && !formData.escrow.isTbdEscrowEmail) {
+        error = validateEmail(value);
+        setValidationErrors(prev => ({ ...prev, escrowEmail: error }));
+      } else if (field === 'insuranceEmail' && !formData.escrow.isTbdInsuranceEmail) {
+        error = validateEmail(value);
+        setValidationErrors(prev => ({ ...prev, insuranceEmail: error }));
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        escrow: {
+          ...prev.escrow,
+          [field]: value
+        }
+      }));
+    }
+    else if (section && field && section in formData) {
       setFormData(prev => ({
         ...prev,
         [section]: {
-          ...prev[section as keyof typeof prev],
+          ...prev[section as keyof FormData],
           [field]: value
         }
       }));
@@ -232,6 +301,24 @@ export default function NewRequest() {
 
   const handleLoanAmountBlur = () => {
     const loan = parseNumber(formData.loan.loanAmount);
+    const pv = parseNumber(formData.loan.propertyValue);
+    
+    if (pv > 0) {
+      const calculatedLtv = (loan / pv) * 100;
+      if (calculatedLtv > 100) {
+        setLtvError('LTV cannot exceed 100%');
+        setFormData(prev => ({
+          ...prev,
+          loan: {
+            ...prev.loan,
+            loanAmount: formatter.format(pv),
+            ltv: '100.00'
+          }
+        }));
+        return;
+      }
+    }
+
     setFormData(prev => ({
       ...prev,
       loan: {
@@ -329,31 +416,29 @@ export default function NewRequest() {
 
   // Add validation functions
   const validateEmail = (email: string): string => {
-    if (!email) return '';
+    if (!email) return 'Email is required';
     const invalidChars = /[^a-zA-Z0-9@._-]/g;
     if (invalidChars.test(email)) {
-        return 'Invalid character in email address';
+      return 'Invalid character in email address';
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-        return 'Please enter a valid email address';
+      return 'Please enter a valid email address';
     }
     return '';
   };
 
-  const validatePhoneNumber = (phone: string) => {
-    // Allows formats: (123) 456-7890, 123-456-7890, 1234567890
-    const phoneRegex = /^(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
-    if (!phone) {
-      return 'Contact number is required';
-    }
-    if (!phoneRegex.test(phone)) {
-      return 'Please enter a valid phone number';
+  const validatePhoneNumber = (phone: string): string => {
+    if (!phone) return 'Contact number is required';
+    // Remove all non-digits for validation
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length !== 10) {
+      return 'Phone number must be 10 digits';
     }
     return '';
   };
 
-  const formatPhoneNumber = (value: string) => {
+  const formatPhoneNumber = (value: string): string => {
     // Remove all non-digits
     const cleaned = value.replace(/\D/g, '');
     // Format as (XXX) XXX-XXXX
@@ -365,13 +450,32 @@ export default function NewRequest() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate all required fields before submission
+    const emailError = validateEmail(formData.borrower.email);
+    const phoneError = validatePhoneNumber(formData.borrower.contactNumber);
+    const escrowEmailError = !formData.escrow.isTbdEscrowEmail ? validateEmail(formData.escrow.email) : '';
+    const insuranceEmailError = !formData.escrow.isTbdInsuranceEmail ? validateEmail(formData.escrow.insuranceEmail) : '';
+
+    setValidationErrors({
+      email: emailError,
+      contactNumber: phoneError,
+      escrowEmail: escrowEmailError,
+      insuranceEmail: insuranceEmailError
+    });
+
+    // Check if there are any validation errors
+    if (emailError || phoneError || escrowEmailError || insuranceEmailError) {
+      return; // Stop form submission if there are errors
+    }
+
     setIsLoading(true);
 
     try {
       const newRequest: LoanRequest = {
-        id: Date.now().toString(),
+        id: Math.random().toString(36).substring(7),
         status: 'In Process (Consultant)',
-        createdAt: new Date().toLocaleString(),
+        createdAt: new Date().toISOString(),
         type: 'New loan',
         borrowerName: formData.borrower.legalName,
         borrowerInfo: {
@@ -382,9 +486,9 @@ export default function NewRequest() {
           documents: []
         },
         loan: {
-          propertyValue: parseNumber(formData.loan.propertyValue),
-          loanAmount: parseNumber(formData.loan.loanAmount),
-          ltv: parseNumber(formData.loan.ltv),
+          propertyValue: parseFloat(formData.loan.propertyValue.replace(/,/g, '')),
+          loanAmount: parseFloat(formData.loan.loanAmount.replace(/,/g, '')),
+          ltv: parseFloat(formData.loan.ltv.replace(/,/g, '')),
           propertyAddress: formData.loan.propertyAddress,
           loanPurpose: formData.loan.loanPurpose,
           propertyType: formData.loan.propertyType,
@@ -397,8 +501,11 @@ export default function NewRequest() {
           email: formData.escrow.email,
           insuranceEmail: formData.escrow.insuranceEmail,
           initialFileSubmission: formData.escrow.initialFileSubmission.map(file => ({
-            name: file.file.name,
-            folder: file.folder
+            name: file.name,
+            url: file.url,
+            folder: file.folder,
+            type: file.type,
+            size: file.size
           })),
           documents: [],
           isTbdEscrowEmail: formData.escrow.isTbdEscrowEmail,
@@ -448,9 +555,13 @@ export default function NewRequest() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    const newFiles = files.map(file => ({
+    const newFiles: FileWithFolder[] = files.map(file => ({
       file,
-      folder: 'others' // Default folder
+      name: file.name,
+      url: URL.createObjectURL(file),
+      folder: 'others', // Default folder
+      type: file.type,
+      size: file.size
     }));
     
     setFormData(prev => ({
@@ -465,9 +576,13 @@ export default function NewRequest() {
   const handleFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const files = Array.from(e.dataTransfer.files);
-    const newFiles = files.map(file => ({
+    const newFiles: FileWithFolder[] = files.map(file => ({
       file,
-      folder: 'others' // Default folder
+      name: file.name,
+      url: URL.createObjectURL(file),
+      folder: 'others', // Default folder
+      type: file.type,
+      size: file.size
     }));
     
     setFormData(prev => ({
