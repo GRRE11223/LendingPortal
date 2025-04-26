@@ -1,10 +1,13 @@
 import './globals.css';
-import 'leaflet/dist/leaflet.css';
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
 import Providers from './components/Providers';
 
-export const metadata = {
-  title: 'Loan Portal',
-  description: 'A modern loan management portal',
+const inter = Inter({ subsets: ['latin'] });
+
+export const metadata: Metadata = {
+  title: 'Lending Portal',
+  description: 'A modern lending management platform',
 };
 
 export default function RootLayout({
@@ -13,8 +16,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="zh">
-      <body>
+    <html lang="en">
+      <body className={inter.className}>
         <Providers>
           {children}
         </Providers>

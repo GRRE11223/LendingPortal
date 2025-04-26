@@ -8,6 +8,11 @@ import {
   ChatBubbleLeftRightIcon,
   CheckCircleIcon,
   ClockIcon,
+  PlusIcon,
+  DocumentIcon,
+  DocumentDuplicateIcon,
+  ClipboardDocumentCheckIcon,
+  CurrencyDollarIcon,
 } from '@heroicons/react/24/outline';
 import ChatBox from '@/components/ChatBox';
 
@@ -33,7 +38,7 @@ interface Document {
 
 interface LoanRequest {
   id: string;
-  status: 'In Process (Consultant)' | 'Waiting for a Banker' | 'In Process (Banker)' | 'Rejected' | 'Inquiried' | 'Accepted';
+  status: 'Inquiried' | 'Open Escrow' | 'Underwriting' | 'Ready to Fund' | 'Funded' | 'Servicing' | 'Completed' | 'Hold' | 'Canceled';
   createdAt: string;
   type: string;
   borrowerName: string;
@@ -104,12 +109,15 @@ export default function Dashboard() {
   const [activeLoanId, setActiveLoanId] = useState<string | null>(null);
   const [stats, setStats] = useState({
     all: 0,
-    inProcessConsultant: 0,
-    waitingForBanker: 0,
-    inProcessBanker: 0,
-    rejected: 0,
     inquiried: 0,
-    accepted: 0
+    openEscrow: 0,
+    underwriting: 0,
+    readyToFund: 0,
+    funded: 0,
+    servicing: 0,
+    completed: 0,
+    hold: 0,
+    canceled: 0
   });
 
   // 示例数据
@@ -193,33 +201,42 @@ export default function Dashboard() {
     // 计算统计数据
     const newStats = {
       all: currentRequests.length,
-      inProcessConsultant: currentRequests.filter((r: LoanRequest) => r.status === 'In Process (Consultant)').length,
-      waitingForBanker: currentRequests.filter((r: LoanRequest) => r.status === 'Waiting for a Banker').length,
-      inProcessBanker: currentRequests.filter((r: LoanRequest) => r.status === 'In Process (Banker)').length,
-      rejected: currentRequests.filter((r: LoanRequest) => r.status === 'Rejected').length,
       inquiried: currentRequests.filter((r: LoanRequest) => r.status === 'Inquiried').length,
-      accepted: currentRequests.filter((r: LoanRequest) => r.status === 'Accepted').length
+      openEscrow: currentRequests.filter((r: LoanRequest) => r.status === 'Open Escrow').length,
+      underwriting: currentRequests.filter((r: LoanRequest) => r.status === 'Underwriting').length,
+      readyToFund: currentRequests.filter((r: LoanRequest) => r.status === 'Ready to Fund').length,
+      funded: currentRequests.filter((r: LoanRequest) => r.status === 'Funded').length,
+      servicing: currentRequests.filter((r: LoanRequest) => r.status === 'Servicing').length,
+      completed: currentRequests.filter((r: LoanRequest) => r.status === 'Completed').length,
+      hold: currentRequests.filter((r: LoanRequest) => r.status === 'Hold').length,
+      canceled: currentRequests.filter((r: LoanRequest) => r.status === 'Canceled').length
     };
 
     setStats(newStats);
   }, []);
 
   const statusColors = {
-    'In Process (Consultant)': 'bg-purple-100 text-purple-800',
-    'Waiting for a Banker': 'bg-orange-100 text-orange-800',
-    'In Process (Banker)': 'bg-yellow-100 text-yellow-800',
-    'Rejected': 'bg-red-100 text-red-800',
-    'Inquiried': 'bg-blue-100 text-blue-800',
-    'Accepted': 'bg-emerald-100 text-emerald-800'
+    'Inquiried': 'bg-blue-50 text-blue-800',
+    'Open Escrow': 'bg-purple-50 text-purple-800',
+    'Underwriting': 'bg-indigo-50 text-indigo-800',
+    'Ready to Fund': 'bg-emerald-50 text-emerald-800',
+    'Funded': 'bg-green-50 text-green-800',
+    'Servicing': 'bg-cyan-50 text-cyan-800',
+    'Completed': 'bg-teal-50 text-teal-800',
+    'Hold': 'bg-amber-50 text-amber-800',
+    'Canceled': 'bg-red-50 text-red-800'
   };
 
   const statusOptions = [
-    'In Process (Consultant)',
-    'Waiting for a Banker',
-    'In Process (Banker)',
-    'Rejected',
     'Inquiried',
-    'Accepted'
+    'Open Escrow',
+    'Underwriting',
+    'Ready to Fund',
+    'Funded',
+    'Servicing',
+    'Completed',
+    'Hold',
+    'Canceled'
   ] as const;
 
   // Generate sequential loan ID
@@ -254,12 +271,15 @@ export default function Dashboard() {
     // 更新统计数据
     const newStats = {
       all: updatedRequests.length,
-      inProcessConsultant: updatedRequests.filter(r => r.status === 'In Process (Consultant)').length,
-      waitingForBanker: updatedRequests.filter(r => r.status === 'Waiting for a Banker').length,
-      inProcessBanker: updatedRequests.filter(r => r.status === 'In Process (Banker)').length,
-      rejected: updatedRequests.filter(r => r.status === 'Rejected').length,
       inquiried: updatedRequests.filter(r => r.status === 'Inquiried').length,
-      accepted: updatedRequests.filter(r => r.status === 'Accepted').length
+      openEscrow: updatedRequests.filter(r => r.status === 'Open Escrow').length,
+      underwriting: updatedRequests.filter(r => r.status === 'Underwriting').length,
+      readyToFund: updatedRequests.filter(r => r.status === 'Ready to Fund').length,
+      funded: updatedRequests.filter(r => r.status === 'Funded').length,
+      servicing: updatedRequests.filter(r => r.status === 'Servicing').length,
+      completed: updatedRequests.filter(r => r.status === 'Completed').length,
+      hold: updatedRequests.filter(r => r.status === 'Hold').length,
+      canceled: updatedRequests.filter(r => r.status === 'Canceled').length
     };
     
     setStats(newStats);
@@ -284,310 +304,360 @@ export default function Dashboard() {
     }
   }, [requests, selectedStatus]);
 
+  const handleNewRequest = () => {
+    router.push('/dashboard/new-request');
+  };
+
   return (
-    <>
-      <div className="p-8">
-        {/* Welcome Section */}
-        <div className="bg-white rounded-lg p-6 mb-8 flex justify-between items-start">
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-2xl font-bold">
-              Welcome <span className="text-blue-500">Front Desk</span>
+            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-700 to-slate-900">
+              Loan Requests
             </h1>
-            <p className="text-gray-600 mt-2">
-              This application allows loan requests smooth processing,<br />
-              from Consultants to Bankers.
+            <p className="text-slate-500 mt-1">
+              Manage and track all loan requests in one place
             </p>
-            <div className="mt-4 space-x-4">
-              <button className="px-4 py-2 border border-blue-500 text-blue-500 rounded-md hover:bg-blue-50">
-                My Details
-              </button>
-              <button 
-                onClick={() => router.push('/dashboard/new-request')}
-                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-              >
-                New Request
-              </button>
-            </div>
           </div>
-          <div className="w-1/3">
-            <img src="/loan-illustration.svg" alt="Loan Process" className="w-full" />
-          </div>
+          <button
+            onClick={handleNewRequest}
+            className="px-4 py-2 bg-gradient-to-r from-slate-700 to-slate-800 text-white rounded-xl hover:from-slate-800 hover:to-slate-900 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <PlusIcon className="h-5 w-5 mr-2 inline-block" />
+            New Request
+          </button>
         </div>
 
-        {/* My Report Section */}
-        <div className="bg-white rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">My Report</h2>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-              <div>
-                <p className="text-gray-600">All</p>
-                <p className="text-sm text-gray-500">All my requests</p>
+        <div className="flex gap-6">
+          {/* Main Content Area */}
+          <div className="flex-1">
+            {/* Dashboard Overview Section */}
+            <div className="grid grid-cols-3 gap-6 mb-8">
+              {/* Total Loans Card */}
+              <div className="bg-gradient-to-br from-slate-50/90 to-white/80 backdrop-blur-sm rounded-2xl p-6 border border-slate-200/30 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-500">Total Loans</p>
+                    <h3 className="text-2xl font-bold text-slate-800 mt-1">
+                      {stats.all}
+                    </h3>
+                  </div>
+                  <div className="h-12 w-12 bg-gradient-to-br from-slate-600 to-slate-700 rounded-xl flex items-center justify-center shadow-lg">
+                    <DocumentIcon className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center text-sm">
+                  <ArrowRightIcon className="h-4 w-4 text-slate-500 mr-1" />
+                  <span className="text-slate-600">Active loans in system</span>
+                </div>
               </div>
-              <div className="flex items-center">
-                <span className="text-2xl font-bold text-blue-500">{stats.all}</span>
-                <div className="ml-2 text-blue-500">📈</div>
-              </div>
-            </div>
-            <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-              <div>
-                <p className="text-gray-600">Accepted</p>
-                <p className="text-sm text-gray-500">All my accepted requests</p>
-              </div>
-              <div className="flex items-center">
-                <span className="text-2xl font-bold text-blue-500">{stats.accepted}</span>
-                <div className="ml-2 text-blue-500">📈</div>
-              </div>
-            </div>
-            <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-              <div>
-                <p className="text-gray-600">This year</p>
-                <p className="text-sm text-gray-500">All my requests of the year</p>
-              </div>
-              <div className="flex items-center">
-                <span className="text-2xl font-bold text-blue-500">{stats.all}</span>
-                <div className="ml-2 text-blue-500">📈</div>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Loan Requests Section */}
-        <div className="bg-white rounded-lg p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">My Loan Requests</h2>
-          
-          {/* Status Cards */}
-          <div className="grid grid-cols-7 gap-4 mb-6">
-            <div 
-              className={`bg-gray-100 rounded-lg p-4 flex flex-col h-[76px] cursor-pointer transition-all hover:shadow-md ${selectedStatus === null ? 'ring-2 ring-gray-400' : ''}`}
-              onClick={() => handleStatusFilter(null)}
-            >
-              <span className="text-2xl font-bold text-gray-900">{stats.all}</span>
-              <span className="text-sm text-gray-600">All</span>
-            </div>
-            <div 
-              className={`bg-purple-50 rounded-lg p-4 flex flex-col h-[76px] cursor-pointer transition-all hover:shadow-md ${selectedStatus === 'In Process (Consultant)' ? 'ring-2 ring-purple-400' : ''}`}
-              onClick={() => handleStatusFilter('In Process (Consultant)')}
-            >
-              <span className="text-2xl font-bold text-purple-900">{stats.inProcessConsultant}</span>
-              <span className="text-sm text-purple-600">In Process (Consultant)</span>
-            </div>
-            <div 
-              className={`bg-orange-50 rounded-lg p-4 flex flex-col h-[76px] cursor-pointer transition-all hover:shadow-md ${selectedStatus === 'Waiting for a Banker' ? 'ring-2 ring-orange-400' : ''}`}
-              onClick={() => handleStatusFilter('Waiting for a Banker')}
-            >
-              <span className="text-2xl font-bold text-orange-900">{stats.waitingForBanker}</span>
-              <span className="text-sm text-orange-600">Waiting for a Banker</span>
-            </div>
-            <div 
-              className={`bg-yellow-50 rounded-lg p-4 flex flex-col h-[76px] cursor-pointer transition-all hover:shadow-md ${selectedStatus === 'In Process (Banker)' ? 'ring-2 ring-yellow-400' : ''}`}
-              onClick={() => handleStatusFilter('In Process (Banker)')}
-            >
-              <span className="text-2xl font-bold text-yellow-900">{stats.inProcessBanker}</span>
-              <span className="text-sm text-yellow-600">In Process (Banker)</span>
-            </div>
-            <div 
-              className={`bg-red-50 rounded-lg p-4 flex flex-col h-[76px] cursor-pointer transition-all hover:shadow-md ${selectedStatus === 'Rejected' ? 'ring-2 ring-red-400' : ''}`}
-              onClick={() => handleStatusFilter('Rejected')}
-            >
-              <span className="text-2xl font-bold text-red-900">{stats.rejected}</span>
-              <span className="text-sm text-red-600">Rejected</span>
-            </div>
-            <div 
-              className={`bg-blue-50 rounded-lg p-4 flex flex-col h-[76px] cursor-pointer transition-all hover:shadow-md ${selectedStatus === 'Inquiried' ? 'ring-2 ring-blue-400' : ''}`}
-              onClick={() => handleStatusFilter('Inquiried')}
-            >
-              <span className="text-2xl font-bold text-blue-900">{stats.inquiried}</span>
-              <span className="text-sm text-blue-600">Inquiried</span>
-            </div>
-            <div 
-              className={`bg-emerald-50 rounded-lg p-4 flex flex-col h-[76px] cursor-pointer transition-all hover:shadow-md ${selectedStatus === 'Accepted' ? 'ring-2 ring-emerald-400' : ''}`}
-              onClick={() => handleStatusFilter('Accepted')}
-            >
-              <span className="text-2xl font-bold text-emerald-900">{stats.accepted}</span>
-              <span className="text-sm text-emerald-600">Accepted</span>
-            </div>
-          </div>
+              {/* In Progress Card */}
+              <div className="bg-gradient-to-br from-slate-50/90 to-white/80 backdrop-blur-sm rounded-2xl p-6 border border-slate-200/30 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-500">In Progress</p>
+                    <h3 className="text-2xl font-bold text-slate-800 mt-1">
+                      {stats.inquiried + stats.openEscrow + stats.underwriting + stats.readyToFund}
+                    </h3>
+                  </div>
+                  <div className="h-12 w-12 bg-gradient-to-br from-slate-600 to-slate-700 rounded-xl flex items-center justify-center shadow-lg">
+                    <ClockIcon className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center text-sm">
+                  <ArrowRightIcon className="h-4 w-4 text-slate-500 mr-1" />
+                  <span className="text-slate-600">Loans under processing</span>
+                </div>
+              </div>
 
-          {/* Request List */}
-          <div className="space-y-4 min-h-[400px]">
-            {filteredRequests.map((request, index) => (
-              <div 
-                key={request.id} 
-                className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 cursor-pointer transition-colors"
-                onClick={() => router.push(`/dashboard/requests/${request.id}`)}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-4">
-                    <EnvelopeIcon className="h-6 w-6 text-gray-400" />
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <span className="font-medium">
-                          {generateLoanId(index)} - {request.borrowerName} - {request.propertyAddress}
-                        </span>
+              {/* Completed Card */}
+              <div className="bg-gradient-to-br from-slate-50/90 to-white/80 backdrop-blur-sm rounded-2xl p-6 border border-slate-200/30 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-500">Completed</p>
+                    <h3 className="text-2xl font-bold text-slate-800 mt-1">
+                      {stats.funded + stats.servicing + stats.completed}
+                    </h3>
+                  </div>
+                  <div className="h-12 w-12 bg-gradient-to-br from-slate-600 to-slate-700 rounded-xl flex items-center justify-center shadow-lg">
+                    <CheckCircleIcon className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center text-sm">
+                  <ArrowRightIcon className="h-4 w-4 text-slate-500 mr-1" />
+                  <span className="text-slate-600">Successfully processed loans</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Loan Requests List */}
+            <div className="bg-gradient-to-br from-slate-50/90 to-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/30 shadow-lg overflow-hidden">
+              <div className="px-6 py-4 bg-white/40 border-b border-slate-200/50">
+                <h2 className="text-lg font-semibold text-slate-800">My Loan Requests</h2>
+              </div>
+              <div className="p-5 space-y-4 bg-slate-100/30">
+                {filteredRequests.map((request, index) => (
+                  <div 
+                    key={request.id} 
+                    className="relative group bg-gradient-to-br from-slate-50/90 to-white/80 backdrop-blur-sm rounded-xl border border-slate-200/30 shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:scale-[1.01]"
+                    onClick={() => router.push(`/dashboard/requests/${request.id}`)}
+                  >
+                    <div className="p-6">
+                      {/* Request Header */}
+                      <div className="flex items-center justify-between mb-8">
+                        <div className="flex items-center space-x-4">
+                          <div className="h-11 w-11 bg-gradient-to-br from-slate-600 to-slate-700 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-200">
+                            <EnvelopeIcon className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <h3 className="text-[15px] font-medium text-slate-700 group-hover:text-slate-900 transition-colors">
+                              {generateLoanId(index)} - {request.borrowerName}
+                            </h3>
+                            <p className="text-xs text-slate-500 mt-1">
+                              Created on {new Date(request.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
                         <select
-                          className={`px-2 py-1 rounded-full text-xs ${statusColors[request.status]}`}
+                          className={`text-xs px-3.5 py-1.5 rounded-full ${statusColors[request.status]} border border-current/30 backdrop-blur-sm hover:border-current/50 shadow-sm hover:shadow transition-all duration-200`}
                           value={request.status}
-                          onClick={(e) => e.stopPropagation()} // 防止触发父元素的点击事件
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            updateLoanStatus(request.id, e.target.value as LoanRequest['status']);
-                          }}
+                          onChange={(e) => updateLoanStatus(request.id, e.target.value as LoanRequest['status'])}
+                          onClick={(e) => e.stopPropagation()}
                         >
                           {statusOptions.map(status => (
                             <option key={status} value={status}>{status}</option>
                           ))}
                         </select>
                       </div>
-                      <p className="text-sm text-gray-500">Created on {new Date(request.createdAt).toLocaleString()}</p>
+
+                      {/* Progress Tracking */}
+                      <div className="px-1">
+                        <div className="relative">
+                          {/* Progress Points and Labels */}
+                          <div className="flex">
+                            {['Borrower', 'Escrow', 'Title', 'Underwriting', 'Pre-Funding', 'Post-Funding'].map((stage, index, array) => {
+                              const progress = request.progress[stage.toLowerCase() as keyof typeof request.progress] || 0;
+                              const isActive = progress > 0;
+                              const width = '16.66%'; // 将宽度平均分配为6等份
+                              const isLastStage = index === array.length - 1;
+                              
+                              return (
+                                <div key={stage} className="flex flex-col" style={{ width }}>
+                                  {/* Point and Progress Line */}
+                                  <div className="flex items-center">
+                                    {/* Point */}
+                                    <div className="relative flex items-center justify-center">
+                                      <div 
+                                        className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                                          isActive 
+                                            ? 'bg-slate-700 ring-2 ring-slate-200' 
+                                            : 'bg-slate-300 ring-2 ring-slate-100'
+                                        }`}
+                                      />
+                                      {isActive && (
+                                        <div className="absolute w-4 h-4 rounded-full border border-slate-300" />
+                                      )}
+                                    </div>
+                                    
+                                    {/* Progress Line - 移除对最后一个元素的特殊处理 */}
+                                    <div className="h-[1px] flex-1 mx-2">
+                                      <div className="h-full bg-slate-200/50">
+                                        <div 
+                                          className="h-full bg-gradient-to-r from-slate-600 to-slate-700 transition-all duration-300 ease-out"
+                                          style={{ width: `${progress}%` }}
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Label and Percentage */}
+                                  <div className="mt-2 ml-[-4px]">
+                                    <div className="text-[11px] font-medium text-slate-600 whitespace-nowrap">
+                                      {stage}
+                                    </div>
+                                    <div className={`text-[11px] font-medium ${
+                                      isActive ? 'text-slate-700' : 'text-slate-400'
+                                    }`}>
+                                      {progress}%
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-4">
-                    <button
-                      onClick={() => router.push(`/dashboard/requests/${request.id}`)}
-                      className="flex items-center space-x-2 text-blue-600 hover:text-blue-800"
-                    >
-                      <span>View Details</span>
-                      <ArrowRightIcon className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault(); // Prevent event bubbling
-                        e.stopPropagation(); // Prevent triggering parent's click event
-                        console.log('Chat button clicked');
-                        console.log('Loan ID:', request.id);
-                        console.log('Current chat state:', { isChatOpen, activeLoanId });
-                        setActiveLoanId(request.id);
-                        setIsChatOpen(true);
-                        console.log('Updated chat state:', { isChatOpen: true, activeLoanId: request.id });
-                      }}
-                      className="flex items-center space-x-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100"
-                    >
-                      <ChatBubbleLeftRightIcon className="h-5 w-5" />
-                      <span className="text-sm">Chat</span>
-                    </button>
-                  </div>
-                </div>
+                ))}
                 
-                {/* Progress Bars */}
-                <div className="grid grid-cols-4 gap-4 mt-4">
-                  {/* Borrower */}
-                  <div>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span>Borrower</span>
-                      <span className="text-blue-600">{request.progress.borrower}%</span>
-                    </div>
-                    <div className="h-1.5 bg-gray-200 rounded-full">
-                      <div 
-                        className="h-1.5 bg-blue-500 rounded-full"
-                        style={{ width: `${request.progress.borrower}%` }}
-                      />
-                    </div>
-                    <span className="flex items-center text-xs text-gray-500 mt-1">
-                      <ClockIcon className="h-3 w-3 mr-1" />
-                      {request.progress.borrower > 0 ? 'In Progress' : 'Not Started'}
-                    </span>
+                {filteredRequests.length === 0 && (
+                  <div className="bg-gradient-to-br from-slate-50/90 to-white/80 backdrop-blur-sm rounded-xl border border-slate-200/30 p-8 text-center shadow-md">
+                    <DocumentIcon className="h-12 w-12 mx-auto text-slate-400 mb-3" />
+                    <p className="text-slate-500">No loan requests found for the selected status</p>
                   </div>
+                )}
+              </div>
+            </div>
+          </div>
 
-                  {/* Escrow & Title Column */}
-                  <div>
-                    {/* Escrow */}
-                    <div>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span>Escrow</span>
-                        <span className="text-blue-600">{request.progress.escrow}%</span>
-                      </div>
-                      <div className="h-1.5 bg-gray-200 rounded-full">
-                        <div 
-                          className="h-1.5 bg-blue-500 rounded-full"
-                          style={{ width: `${request.progress.escrow}%` }}
-                        />
-                      </div>
-                      <span className="flex items-center text-xs text-gray-500 mt-1">
-                        <ClockIcon className="h-3 w-3 mr-1" />
-                        {request.progress.escrow > 0 ? 'In Progress' : 'Not Started'}
-                      </span>
-                    </div>
-                    {/* Title */}
-                    <div className="mt-4">
-                      <div className="flex justify-between text-xs mb-1">
-                        <span>Title</span>
-                        <span className="text-blue-600">{request.progress.title}%</span>
-                      </div>
-                      <div className="h-1.5 bg-gray-200 rounded-full">
-                        <div 
-                          className="h-1.5 bg-blue-500 rounded-full"
-                          style={{ width: `${request.progress.title}%` }}
-                        />
-                      </div>
-                      <span className="flex items-center text-xs text-gray-500 mt-1">
-                        <ClockIcon className="h-3 w-3 mr-1" />
-                        {request.progress.title > 0 ? 'In Progress' : 'Not Started'}
-                      </span>
-                    </div>
-                  </div>
+          {/* Status Filter Sidebar */}
+          <div className="w-64">
+            <div className="bg-gradient-to-br from-slate-50/90 to-white/80 backdrop-blur-sm rounded-2xl p-6 border border-slate-200/30 shadow-lg sticky top-8">
+              <h3 className="text-lg font-semibold text-slate-800 mb-6">Status Overview</h3>
+              <div className="space-y-2">
+                {/* All */}
+                <div 
+                  className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all duration-200
+                    bg-gradient-to-r from-slate-100/80 to-white/80
+                    ${selectedStatus === null 
+                      ? 'from-slate-200/90 to-slate-100/80 shadow-lg ring-1 ring-slate-200/50 scale-[1.02]' 
+                      : 'hover:from-slate-100/90 hover:to-slate-50/80'
+                    }`}
+                  onClick={() => handleStatusFilter(null)}
+                >
+                  <span className="text-sm font-medium text-slate-700">All</span>
+                  <span className="text-lg font-semibold text-slate-900">{stats.all}</span>
+                </div>
 
-                  {/* Underwriting */}
-                  <div>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span>Underwriting</span>
-                      <span className="text-blue-600">{request.progress.underwriting}%</span>
-                    </div>
-                    <div className="h-1.5 bg-gray-200 rounded-full">
-                      <div 
-                        className="h-1.5 bg-blue-500 rounded-full"
-                        style={{ width: `${request.progress.underwriting}%` }}
-                      />
-                    </div>
-                    <span className="flex items-center text-xs text-gray-500 mt-1">
-                      <ClockIcon className="h-3 w-3 mr-1" />
-                      {request.progress.underwriting > 0 ? 'In Progress' : 'Not Started'}
-                    </span>
-                  </div>
+                <div 
+                  className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all duration-200
+                    bg-gradient-to-r from-blue-50 to-white
+                    ${selectedStatus === 'Inquiried'
+                      ? 'from-blue-200 to-blue-100 shadow-lg ring-1 ring-blue-200 scale-[1.02]' 
+                      : 'hover:from-blue-100 hover:to-blue-50'
+                    }`}
+                  onClick={() => handleStatusFilter('Inquiried')}
+                >
+                  <span className="text-sm font-medium text-blue-700">Inquiried</span>
+                  <span className="text-lg font-semibold text-blue-900">{stats.inquiried}</span>
+                </div>
 
-                  {/* Post Funding */}
-                  <div>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span>Post Funding</span>
-                      <span className="text-blue-600">{request.progress.postFunding}%</span>
-                    </div>
-                    <div className="h-1.5 bg-gray-200 rounded-full">
-                      <div 
-                        className="h-1.5 bg-blue-500 rounded-full"
-                        style={{ width: `${request.progress.postFunding}%` }}
-                      />
-                    </div>
-                    <span className="flex items-center text-xs text-gray-500 mt-1">
-                      <ClockIcon className="h-3 w-3 mr-1" />
-                      {request.progress.postFunding > 0 ? 'In Progress' : 'Not Started'}
-                    </span>
-                  </div>
+                <div 
+                  className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all duration-200
+                    bg-gradient-to-r from-purple-50 to-white
+                    ${selectedStatus === 'Open Escrow'
+                      ? 'from-purple-200 to-purple-100 shadow-lg ring-1 ring-purple-200 scale-[1.02]' 
+                      : 'hover:from-purple-100 hover:to-purple-50'
+                    }`}
+                  onClick={() => handleStatusFilter('Open Escrow')}
+                >
+                  <span className="text-sm font-medium text-purple-700">Open Escrow</span>
+                  <span className="text-lg font-semibold text-purple-900">{stats.openEscrow}</span>
+                </div>
+
+                <div 
+                  className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all duration-200
+                    bg-gradient-to-r from-indigo-50 to-white
+                    ${selectedStatus === 'Underwriting'
+                      ? 'from-indigo-200 to-indigo-100 shadow-lg ring-1 ring-indigo-200 scale-[1.02]' 
+                      : 'hover:from-indigo-100 hover:to-indigo-50'
+                    }`}
+                  onClick={() => handleStatusFilter('Underwriting')}
+                >
+                  <span className="text-sm font-medium text-indigo-700">Underwriting</span>
+                  <span className="text-lg font-semibold text-indigo-900">{stats.underwriting}</span>
+                </div>
+
+                <div 
+                  className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all duration-200
+                    bg-gradient-to-r from-emerald-50 to-white
+                    ${selectedStatus === 'Ready to Fund'
+                      ? 'from-emerald-200 to-emerald-100 shadow-lg ring-1 ring-emerald-200 scale-[1.02]' 
+                      : 'hover:from-emerald-100 hover:to-emerald-50'
+                    }`}
+                  onClick={() => handleStatusFilter('Ready to Fund')}
+                >
+                  <span className="text-sm font-medium text-emerald-700">Ready to Fund</span>
+                  <span className="text-lg font-semibold text-emerald-900">{stats.readyToFund}</span>
+                </div>
+
+                <div 
+                  className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all duration-200
+                    bg-gradient-to-r from-green-50 to-white
+                    ${selectedStatus === 'Funded'
+                      ? 'from-green-200 to-green-100 shadow-lg ring-1 ring-green-200 scale-[1.02]' 
+                      : 'hover:from-green-100 hover:to-green-50'
+                    }`}
+                  onClick={() => handleStatusFilter('Funded')}
+                >
+                  <span className="text-sm font-medium text-green-700">Funded</span>
+                  <span className="text-lg font-semibold text-green-900">{stats.funded}</span>
+                </div>
+
+                <div 
+                  className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all duration-200
+                    bg-gradient-to-r from-cyan-50 to-white
+                    ${selectedStatus === 'Servicing'
+                      ? 'from-cyan-200 to-cyan-100 shadow-lg ring-1 ring-cyan-200 scale-[1.02]' 
+                      : 'hover:from-cyan-100 hover:to-cyan-50'
+                    }`}
+                  onClick={() => handleStatusFilter('Servicing')}
+                >
+                  <span className="text-sm font-medium text-cyan-700">Servicing</span>
+                  <span className="text-lg font-semibold text-cyan-900">{stats.servicing}</span>
+                </div>
+
+                <div 
+                  className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all duration-200
+                    bg-gradient-to-r from-teal-50 to-white
+                    ${selectedStatus === 'Completed'
+                      ? 'from-teal-200 to-teal-100 shadow-lg ring-1 ring-teal-200 scale-[1.02]' 
+                      : 'hover:from-teal-100 hover:to-teal-50'
+                    }`}
+                  onClick={() => handleStatusFilter('Completed')}
+                >
+                  <span className="text-sm font-medium text-teal-700">Completed</span>
+                  <span className="text-lg font-semibold text-teal-900">{stats.completed}</span>
+                </div>
+
+                <div 
+                  className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all duration-200
+                    bg-gradient-to-r from-amber-50 to-white
+                    ${selectedStatus === 'Hold'
+                      ? 'from-amber-200 to-amber-100 shadow-lg ring-1 ring-amber-200 scale-[1.02]' 
+                      : 'hover:from-amber-100 hover:to-amber-50'
+                    }`}
+                  onClick={() => handleStatusFilter('Hold')}
+                >
+                  <span className="text-sm font-medium text-amber-700">Hold</span>
+                  <span className="text-lg font-semibold text-amber-900">{stats.hold}</span>
+                </div>
+
+                <div 
+                  className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all duration-200
+                    bg-gradient-to-r from-red-50 to-white
+                    ${selectedStatus === 'Canceled'
+                      ? 'from-red-200 to-red-100 shadow-lg ring-1 ring-red-200 scale-[1.02]' 
+                      : 'hover:from-red-100 hover:to-red-50'
+                    }`}
+                  onClick={() => handleStatusFilter('Canceled')}
+                >
+                  <span className="text-sm font-medium text-red-700">Canceled</span>
+                  <span className="text-lg font-semibold text-red-900">{stats.canceled}</span>
                 </div>
               </div>
-            ))}
-            
-            {/* 无数据提示 - 调整样式使其垂直居中 */}
-            {filteredRequests.length === 0 && (
-              <div className="h-[400px] flex items-center justify-center text-gray-500">
-                No loan requests found for the selected status
-              </div>
-            )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* ChatBox */}
-      {isChatOpen && activeLoanId && (
-        <div className="fixed bottom-4 right-4 z-[9999]">
-          <ChatBox
-            key={`chat_${activeLoanId}`}
-            loanId={activeLoanId}
-            onClose={() => {
-              setIsChatOpen(false);
-              setActiveLoanId(null);
-            }}
-          />
-        </div>
-      )}
-    </>
+        {/* ChatBox */}
+        {isChatOpen && activeLoanId && (
+          <div className="fixed bottom-4 right-4 z-[9999]">
+            <ChatBox
+              key={`chat_${activeLoanId}`}
+              loanId={activeLoanId}
+              onClose={() => {
+                setIsChatOpen(false);
+                setActiveLoanId(null);
+              }}
+            />
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

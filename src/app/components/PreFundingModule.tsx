@@ -13,14 +13,18 @@ interface LoanRequest {
   id: string;
   borrowerName: string;
   loanAmount: number;
-  propertyAddress: string;
-  underwriting: {
-    loanTerms: {
-      rate: number;
-      term: number;
+  loan: {
+    propertyAddress: {
+      fullAddress: string;
     };
-    propertyDetails: {
-      value: number;
+    underwriting: {
+      loanTerms: {
+        rate: number;
+        term: number;
+      };
+      propertyDetails: {
+        value: number;
+      };
     };
   };
 }
@@ -70,20 +74,20 @@ export default function PreFundingModule({ request, onDocumentGenerate }: PreFun
           </div>
           <div>
             <p className="text-sm text-gray-500">Interest Rate</p>
-            <p className="text-sm font-medium">{request?.underwriting?.loanTerms?.rate}%</p>
+            <p className="text-sm font-medium">{request?.loan?.underwriting?.loanTerms?.rate}%</p>
           </div>
           <div>
             <p className="text-sm text-gray-500">Term</p>
-            <p className="text-sm font-medium">{request?.underwriting?.loanTerms?.term} months</p>
+            <p className="text-sm font-medium">{request?.loan?.underwriting?.loanTerms?.term} months</p>
           </div>
           <div>
             <p className="text-sm text-gray-500">Property</p>
-            <p className="text-sm font-medium">{request?.propertyAddress}</p>
+            <p className="text-sm font-medium">{request?.loan?.propertyAddress?.fullAddress}</p>
           </div>
           <div>
             <p className="text-sm text-gray-500">LTV</p>
             <p className="text-sm font-medium">
-              {(((request?.loanAmount || 0) / (request?.underwriting?.propertyDetails?.value || 1)) * 100).toFixed(2)}%
+              {(((request?.loanAmount || 0) / (request?.loan?.underwriting?.propertyDetails?.value || 1)) * 100).toFixed(2)}%
             </p>
           </div>
         </div>
