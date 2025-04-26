@@ -67,6 +67,15 @@ export interface LoanRequest {
       zipCode: string;
       fullAddress: string;
     };
+    underwriting: {
+      loanTerms: {
+        rate: number;
+        term: number;
+      };
+      propertyDetails: {
+        value: number;
+      };
+    };
   };
   escrow: {
     initialFileSubmission: Array<{

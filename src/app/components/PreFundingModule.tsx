@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Document } from '@/types';
 import {
   DocumentIcon,
   ArrowDownTrayIcon,
@@ -27,14 +28,23 @@ interface LoanRequest {
       };
     };
   };
+  progress: {
+    borrower: number;
+    escrow: number;
+    title: number;
+    underwriting: number;
+    postFunding: number;
+  };
 }
 
 interface PreFundingModuleProps {
   request: LoanRequest;
-  onDocumentGenerate: (type: string) => Promise<void>;
+  onDocumentUpload: (file: File, category: string, section?: 'escrow' | 'title') => void;
+  onStatusChange: (documentId: string, status: Document['status'], section?: 'escrow' | 'title') => Promise<void>;
+  onAddComment: (documentId: string, content: string, section?: 'escrow' | 'title') => Promise<void>;
 }
 
-export default function PreFundingModule({ request, onDocumentGenerate }: PreFundingModuleProps) {
+export default function PreFundingModule({ request, onDocumentUpload, onStatusChange, onAddComment }: PreFundingModuleProps) {
   const [selectedDoc, setSelectedDoc] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -47,15 +57,16 @@ export default function PreFundingModule({ request, onDocumentGenerate }: PreFun
     { id: 'confirmWire', name: 'Confirm Wire Amount with Escrow', type: 'confirm', status: 'pending' },
   ];
 
-  const handleGenerateDocument = async (docId: string) => {
+  const handleDocumentGenerate = async (type: string) => {
     setIsGenerating(true);
     try {
-      await onDocumentGenerate(docId);
-      // 更新文档状态
+      // 在这里处理文档生成逻辑
+      console.log(`Generating document of type: ${type}`);
     } catch (error) {
-      console.error('Failed to generate document:', error);
+      console.error('Error generating document:', error);
+    } finally {
+      setIsGenerating(false);
     }
-    setIsGenerating(false);
   };
 
   return (
@@ -128,7 +139,7 @@ export default function PreFundingModule({ request, onDocumentGenerate }: PreFun
               <div className="flex items-center space-x-2">
                 {doc.type === 'generate' ? (
                   <button
-                    onClick={() => handleGenerateDocument(doc.id)}
+                    onClick={() => handleDocumentGenerate(doc.id)}
                     disabled={isGenerating}
                     className={`px-3 py-2 rounded-md text-sm font-medium ${
                       isGenerating
