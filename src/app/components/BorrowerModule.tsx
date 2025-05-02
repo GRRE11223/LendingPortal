@@ -204,8 +204,10 @@ export default function BorrowerModule({
   };
 
   const handlePreview = (document: Document) => {
+    if (document.versions.length === 0) return;
+    
     const latestVersion = document.versions[document.versions.length - 1];
-    if (latestVersion?.url) {
+    if (latestVersion.url) {
       // For PDFs, we'll open in a new tab as it's more reliable
       if (latestVersion.fileName.toLowerCase().endsWith('.pdf')) {
         window.open(latestVersion.url, '_blank');
@@ -275,9 +277,11 @@ export default function BorrowerModule({
   };
 
   const handlePreviewDocument = (document: Document) => {
+    if (document.versions.length === 0) return;
+    const latestVersion = document.versions[document.versions.length - 1];
     setSelectedDocument({
-      url: document.url,
-      fileName: document.fileName
+      url: latestVersion.url,
+      fileName: latestVersion.fileName
     });
   };
 
@@ -703,15 +707,19 @@ export default function BorrowerModule({
               Comments for {selectedDoc.name}
             </h3>
             <div className="max-h-64 overflow-y-auto mb-4 space-y-2">
-              {selectedDoc.comments?.map((comment) => (
-                <div key={comment.id} className="bg-gray-50 rounded p-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="font-medium">{comment.user}</span>
-                    <span className="text-gray-500">
-                      {new Date(comment.timestamp).toLocaleString()}
-                    </span>
+              {selectedDoc.comments.map((comment) => (
+                <div key={comment.id} className="flex items-start space-x-3 mb-4">
+                  <div className="flex-1 bg-gray-50 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium text-gray-900">
+                        {comment.user?.name || 'Unknown User'}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {new Date(comment.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600">{comment.text}</p>
                   </div>
-                  <p className="text-sm mt-1">{comment.content}</p>
                 </div>
               ))}
             </div>

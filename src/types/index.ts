@@ -47,20 +47,29 @@ export interface Agent {
   invitationToken: string;
 }
 
+export interface DocumentVersion {
+  url: string;
+  fileName: string;
+  uploadedAt: string;
+}
+
+export interface DocumentComment {
+  id: string;
+  text: string;
+  createdAt: string;
+  userId: string;
+  user?: {
+    name: string;
+  };
+}
+
 export interface Document {
   id: string;
   name: string;
   category: string;
   status: string;
-  versions?: {
-    url: string;
-    fileName: string;
-  }[];
-  comments?: {
-    text: string;
-    createdAt: string;
-    userId: string;
-  }[];
+  versions: DocumentVersion[];
+  comments: DocumentComment[];
   loanRequestId: string;
   createdAt: string;
   updatedAt: string;
