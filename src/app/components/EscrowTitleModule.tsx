@@ -17,14 +17,14 @@ import {
   ExclamationCircleIcon,
   PencilIcon,
 } from '@heroicons/react/24/outline';
-import { Document, LoanRequest } from '@/types';
+import { Document, LoanRequest, EscrowInfo, TitleInfo } from '@/types';
 
 interface EscrowTitleModuleProps {
   request: LoanRequest;
   onDocumentUpload: (file: File, category: string, section?: 'escrow' | 'title') => Promise<void>;
   onStatusChange: (documentId: string, status: Document['status'], section?: 'escrow' | 'title') => Promise<void>;
   onAddComment: (documentId: string, comment: string, section?: 'escrow' | 'title') => Promise<void>;
-  onInfoUpdate: (info: any, section: 'escrow' | 'title') => Promise<void>;
+  onInfoUpdate: (info: EscrowInfo | TitleInfo, section: 'escrow' | 'title') => Promise<void>;
   onProgressUpdate?: (progress: number, section: 'escrow' | 'title') => void;
 }
 
