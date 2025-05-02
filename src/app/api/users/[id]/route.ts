@@ -6,7 +6,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = userStore.get(params.id);
+    const user = await userStore.getUser(params.id);
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -22,7 +22,7 @@ export async function PUT(
 ) {
   try {
     const data = await request.json();
-    const updated = userStore.update(params.id, data);
+    const updated = await userStore.updateUser(params.id, data);
     if (!updated) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -37,7 +37,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const success = userStore.delete(params.id);
+    const success = await userStore.deleteUser(params.id);
     if (!success) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
