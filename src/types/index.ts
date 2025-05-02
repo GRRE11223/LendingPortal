@@ -1,5 +1,16 @@
 export type Status = 'active' | 'inactive' | 'pending';
 
+export interface BorrowerInfo {
+  email: string;
+  phone: string;
+  creditScore: number;
+  documents?: any[];
+  annualIncome: number;
+  employmentStatus: 'employed' | 'self-employed' | 'unemployed';
+  employerName: string;
+  employmentLength: string;
+}
+
 export interface User {
   id: string;
   email: string;
