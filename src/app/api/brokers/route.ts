@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { brokerStore } from '@/lib/store';
-import type { BrokerCompany } from '@/types';
+import type { Broker } from '@/types';
 
 export async function GET() {
   try {
