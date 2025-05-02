@@ -1,0 +1,51 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String        @id @default(cuid())
+  email         String        @unique
+  name          String?
+  password      String
+  role          String        @default("user")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  loanRequests  LoanRequest[]
+}
+
+model LoanRequest {
+  id            String     @id @default(cuid())
+  userId        String
+  user          User       @relation(fields: [userId], references: [id])
+  borrowerName  String
+  borrowerInfo  Json?      // 存储借款人信息
+  status        String     @default("pending")
+  documents     Document[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+model Document {
+  id           String      @id @default(cuid())
+  name         String
+  category     String
+  status       String      @default("pending")
+  versions     Json[]      // 存储文档版本历史
+  comments     Json[]      // 存储评论
+  loanRequest  LoanRequest @relation(fields: [loanRequestId], references: [id])
+  loanRequestId String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}

@@ -1,0 +1,460 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+Project Proposal: Phase 1 Plan for Private Lending Portal
+1. Overview
+This proposal presents the feature set and technical goals for Phase 1 of the Private Lending Portal. The platform is built to support a white-label experience for lending partners, enabling them to manage the entire borrower lifecycle through a streamlined and branded digital interface, with Bluebono serves as the back office support on underwriting, funding and servicing. 
+Key capabilities of the portal include:
+Direct borrower interaction, setup a borrower portal or just making direct borrower a partner with single user type access  
+Partner-branded borrower interaction, with no direct exposure to Bluebono.
+Pre-defined but customizable workflows, tailored to each partner’s operational needs.
+Automated task management and role-based access control.
+Integrated document handling, communication tools, and milestone tracking.
+2. Loan Submission Module
+This module outlines how loans are submitted to the portal, how borrower and partner interactions are handled, and how automation and control are applied throughout the process.
+
+2.1 Platform Behavior & General Setup
+White-Label Design & Borrower Flow Control
+Each partner is assigned a custom white-label landing page, giving them full brand control and consistency with their borrower experience.
+The portal is designed to accurately identify and attribute each borrower application to the correct partner channel, using the partner’s unique landing page or other technical identifiers embedded in the submission process—without requiring any action from the borrower.
+Loan ID System
+A centralized loan ID system will be implemented with:
+Auto-generation of unique IDs for every application.
+Option to include partner-specific prefixes (e.g., ABC123456).
+All IDs will be tracked, searchable, and stored for auditing and reporting.
+Prevents duplication across the platform.
+Task Assignment Rules
+To ensure scalable team operations, task assignments are designed for flexibility and automation:
+Admins can define logic-based rules to assign loan files automatically based on:
+Partner source
+Loan status or stage
+Type of loan program
+Group-based assignments are supported:
+For example, assigning all files from Partner ABC to “West Coast Loan Coordinators” instead of one individual.
+Manual reassignment is available at any stage for exceptions or special handling.
+
+2.2 Borrower Workflow
+Borrowers interact with the portal initially through a partner’s landing page and only formally register when submitting an application.
+Anonymous Start & Lead Creation
+Borrowers begin applications without logging in or registering.
+After completing 50% of the application, the system:
+Saves progress
+Creates a Lead entry in the system (marked as Lead status)
+Formal Submission & Account Creation
+When borrowers reach the final step and click “Submit”, the system prompts:
+Portal account registration
+Presentation of industry-standard disclosures, including:
+Consent to electronic communications (eSign Act)
+Authorization to pull credit
+Other applicable legal disclosures
+Once the borrower creates an account and uploads the first document, the loan file is marked as Active.
+Authentication & Accessibility
+Borrowers can use Single Sign-On (SSO) through:
+Gmail
+Outlook
+Apple ID
+Secure OAuth login streamlines their first and only required sign-in.
+Follow-Up & Off-Portal Communication
+To reduce friction:
+Additional document requests or borrower responses are sent via secure, anonymous links—no login required.
+Emails can be fully customized to reflect partner branding:
+Sender name
+Subject line
+Email body
+Design Philosophy
+Borrowers are only required to log in once to complete onboarding (registration, disclosures, and initial uploads).
+After onboarding, they can respond to follow-ups exclusively through secure links, allowing for a low-friction, high-completion experience.
+
+2.3 Partner Workflow
+Partners are given full visibility and control over their borrower pipeline based on permissions defined in their user settings.
+Control & Flexibility
+Partners may manage:
+The entire borrower journey, or
+Select stages depending on their internal processes and delegation preferences.
+Role-Based Task Assignment
+Tasks can be directed:
+To all users within a partner’s portal
+To specific roles (e.g., Partner Admin only)
+To individual users within the partner team
+Follow-up actions (e.g., missing document requests) can be assigned solely to the partner, separate from Bluebono involvement.
+Access Requirements
+All partner actions must be performed within the portal.
+SSO login support is strongly encouraged to simplify access and ensure secure authentication.
+
+
+3. User Roles, Status Tracking & Workflow Visibility
+This section defines user roles across both Bluebono and partner environments and outlines how loans are tracked through statuses, milestones, activity logs, and document reviews. It establishes a clear framework for task ownership, process visibility, and communication clarity throughout the loan lifecycle.
+
+3.1 User Roles & Access Definitions
+Bluebono Internal Roles
+These roles are responsible for platform-wide operations, task management, and oversight:
+Superadmin
+Full control over the entire system.
+Manages partners, user roles, permissions, and configurations.
+Admin
+Oversees day-to-day workflow operations.
+Assigns and reassigns tasks, monitors file progress, and ensures procedural compliance.
+Loan Coordinator
+Responsible for document collection, file reviews, and compliance verification.
+Ensures loan files meet internal requirements prior to final processing.
+Partner-Side Roles
+Partner organizations will manage loan files based on roles defined within their portal access:
+Partner Admin
+Manages partner users and permissions.
+Oversees loan status and workflow visibility.
+Loan Officer
+Main point of contact for the borrower.
+Collects documents, manages application progress, and updates file records.
+Loan Assistant
+Provides administrative support to the Loan Officer.
+Verifies document completeness, updates system status, and assists with borrower communications.
+Borrower
+Accesses the portal via a partner-branded landing page or through a direct login flow.
+Interacts primarily through initial onboarding and document uploads.
+Note: Additional role layers and permission tiers may be introduced based on partner needs and operational complexity.
+
+3.2 Loan Status Definitions
+Loan statuses reflect a file’s internal progress and are used by Bluebono and partners for file management, prioritization, and workflow tracking:
+Lead – A partially completed borrower application.
+Active – A submitted and accepted loan application.
+Servicing – A funded loan currently under repayment management.
+Complete – A fully closed and archived loan file.
+On Hold – A temporarily paused application due to internal or external issues.
+Canceled – A withdrawn or rejected application.
+
+3.3 Loan Milestones & Notifications
+Milestones provide real-time visibility into key events within a loan’s lifecycle and are used to notify both internal users and external parties (e.g., borrowers, partners, escrow):
+Milestone Types
+Title & Escrow
+Appraisal
+In Review
+Ready to Fund
+Funded
+Servicing
+Payoff
+On Hold
+Canceled
+Milestone Features & Flexibility
+Trigger Rules: Admins can define rules for actions (e.g., notifications, assignments) when milestones are reached.
+Manual Override: Milestones can be manually updated as needed.
+Custom Messaging:
+Each milestone can include preset explanations to provide clarity when notices are sent.
+The system can translate internal milestone names into more user-friendly terms for borrowers and non-technical recipients.
+Example: Instead of “Underwriting,” a borrower might see “Review in Progress.”
+
+3.4 Activity Log
+The system maintains a detailed audit trail of all significant user actions for transparency, compliance, and troubleshooting.
+Log Components
+Timestamp – Exact date and time of the action.
+User – Name and role of the user who performed the action.
+Action Description – Clear summary of the task or update made.
+
+3.5 Document Review Status Indicators
+All uploaded documents will be reviewed and classified using a standardized color-coded system to streamline review workflows and enhance file visibility.
+Document Status Types
+✅ Approved – Meets all requirements and no further action is needed.
+❌ Rejected – Does not meet standards; must be corrected or replaced.
+🟡 Pending Review – Awaiting internal verification or additional input.
+4. Pipeline Dashboard Design Plan
+The Pipeline Dashboard is a central interface that enables users to monitor, navigate, and manage loan files efficiently. It should offer a high-level overview of the lending pipeline, with tools for deep dives into loan-level data, visual indicators for workflow stages, and intelligent data filtering to support task prioritization and operational insight.
+
+Dashboard examples: 
+
+
+
+
+
+
+
+
+
+4.1 Dashboard Views & Navigation
+To accommodate different user needs, the platform will include two primary views for the loan pipeline:
+Columns View
+Serves as the master table of all loan files.
+Displays all data points including:
+Loan ID, Partner, Status, Borrower Name
+Assigned User, Stage, Document Completion %, etc.
+Acts as the core view for filtering, bulk actions, and deep-dive analysis.
+Diagram View (Bubble Chart)
+Provides a visual overview of loans by major status categories (e.g., Lead, Active, Funded).
+Each status is represented as a bubble, with:
+Size proportional to loan volume
+Hover tooltips showing counts and brief metrics
+Clicking a bubble redirects users to the filtered Columns View for that status.
+Suggestion: Include a legend above the diagram with status definitions and color codes for quick reference.
+
+4.2 Interactive Dashboard Capabilities
+Clickable Interactions
+Users can interact directly with visual widgets:
+Click on statuses, loan purposes, or date ranges.
+Redirects to filtered data views or related tasks.
+Filtering Options
+Filters should be available on both dashboard and list views.
+Filters by below examples but could be more.
+Loan status
+Partner
+Assigned user
+Loan amount
+Timeframe (e.g., last 30 days)
+Borrower name or Loan ID, etc.
+
+Access Control
+Bluebono Admins: See full pipeline across all partners.
+Partner Admins: See only their own organization’s loans.
+Other Users (Loan Officers, Assistants): See only loans assigned to them or within their teams.
+Suggestion: Add quick filters such as “My Loans” and “Recently Updated” to improve user flow.
+
+4.3 Loan List View Enhancements
+Data Visualization & Reporting
+Integrate key visual insights such as:
+Loan volume trends over time
+Approval conversion rates
+Average loan amount per stage or partner
+Collapsible Views
+Allow users to toggle between:
+Summary View: Displays essential columns only (status, ID, borrower).
+Detailed View: Includes workflow steps, internal notes, approval path, etc.
+Reference: Use design principles similar to Monday.com or Airtable, where layouts can switch between “table,” “board,” or “timeline.”
+
+4.4 Enhanced User Experience
+Customizable Dashboards
+Allow users to adjust:
+Widget placement
+Metric selection (e.g., loans by partner, loans by stage)
+Default views or saved filters
+Suggestion: Enable "Save My Layout" option so each user has a consistent view when logging in.
+
+4.5 Loan-Level Visualization
+Document Collection Progress Tracker
+                          
+Milestone Visual Tracker
+For borrowers/partners, each loan detail view will include a visual tracker displaying the most imminent status or task that required attention in order to move forward to next milestone
+Provide a preview for users to quickly see where the loan stands and which steps remain.
+Suggestion: Use color indicators (e.g., gray for incomplete, green for completed) and show estimated vs. actual timeline for each phase.
+
+4.6 Data Accessibility & Export Options
+Export Functionality
+Users can export current views or filtered results to:
+Excel (XLSX)
+CSV
+Export options should include:
+Choose which columns to include
+Export based on filter state
+Suggestion: Include export history logs for audit/compliance purposes.
+
+4.7 AI-Powered Document Classification
+Tagging & Categorization
+Automatically tag uploaded documents based on type (e.g., ID, Bank Statement, Purchase Agreement).
+AI will scan document content to recommend or auto-assign labels.
+Intelligent Descriptions
+Generate brief summaries for each document, identifying:
+Type
+Purpose
+Whether any required information is missing
+
+Contextual Matching
+Match documents to checklist items or loan-specific conditions.
+Highlight missing or mismatched files (e.g., wrong format, outdated document).
+Suggestion: Allow manual override and tagging to complement AI recommendations.
+
+4.8 Logic Engine & Rule Management
+The dashboard should support logical operations that allow custom rule configuration for decision support and workflow automation.
+Rule-Based Logic Functions
+Conditional triggers for:
+Auto-assigning loans
+For each milestone, configure trigger events that either automatically advance the loan to the next stage or notify the responsible party to complete specific actions required to move the process forward.
+Sending milestone notifications
+Highlighting loan files that exceed a certain threshold (e.g., LTV > 75%)
+Ability to define partner-specific logic without coding:
+“If loan amount > $500K AND partner = ABC, assign to Coordinator Team B”
+Suggestion: Add a visual "Rules Builder" interface for admins to create and edit rules easily.
+
+5. Portal Specifics
+Unified In-Platform Document Management
+Admins require comprehensive control and full visibility over all document-related tasks. To support this, the platform must centralize all file management within a single system to:
+Eliminate fragmentation across tools
+Reduce redundant manual organization
+Ensure documents are consistently organized, trackable, and actionable within the loan lifecycle
+
+Core Objectives
+The goal is to replace the current reliance on external storage solutions (e.g., Google Drive) by offering a robust, built-in file management experience. This includes:
+In-Platform Document Organization:
+All documents should be managed directly within the portal.
+Loan-Linked File Structure:
+Documents are tied to individual loan records, with no need for separate folder systems.
+Categorization & Status Integration:
+File views should reflect document types (e.g., Borrower, Escrow, Insurance), current status (Approved, Rejected, Pending), and version history.
+Real-Time Synchronization:
+All files remain updated and aligned with loan progress, accessible across Admin, Partner, and Client Portals.
+
+Future Scalability
+While AI-based document sorting and automation is not within the scope of Phase 1, this foundational system should be designed to:
+Support the eventual integration of AI-driven classification and organization
+
+
+
+5.1 Enhanced File Management & Review Permissions
+
+Core File Management Capabilities
+Full Control for Admins
+Admin can upload, review, approve, reject, categorize, and update documents at any stage of the loan lifecycle.
+Automatic Synchronization
+Files updated by Admins are automatically reflected in both the Partner and Client portals, with system-generated notifications to ensure visibility.
+Version Control
+Each document retains a version history, allowing users to:
+View previous submissions
+Compare changes
+Roll back if needed
+Add version-specific comments or feedback
+Template-Based Document Requests
+Admins can choose from pre-configured document request templates tailored to various loan types or scenarios (e.g., purchase, refinance, construction), reducing repetitive work and ensuring consistency.
+Predefined Document Checklist
+Required document types can be set per loan type, lender, or partner.
+Categories such as Borrower, Escrow, Insurance, Title, etc., will be grouped and visually organized.
+Each category shows a real-time completion tracker.
+Users can click a checklist item to view, upload, or comment on the associated document.
+Automated reminders for missing documents can be scheduled and triggered based on loan stage or time elapsed.
+File Preview
+Documents can be previewed directly within the portal (PDF, image, Word formats) without needing to download—supporting quicker reviews and reducing local file clutter.
+Organized Bulk Download
+If users want to download all documents for a loan file:
+The system provides a structured folder download, with:
+Files grouped by category
+Systematic file naming (e.g., Borrower_ID_DriversLicense.pdf)
+Optional ZIP file format
+Drag-and-Drop Uploading and Sorting
+Drag-and-drop functionality will support:
+File uploads directly into designated categories
+Rearranging or moving documents within file sections
+Attaching documents to emails or messages (if integrated)
+Smart Visualization & Interaction
+Each document includes status indicators:
+✅ Approved ❌ Rejected 🟡 Pending
+Users can:
+Click into a file to review comments
+Approve, reject, or annotate individual versions
+Tag teammates or assign follow-up actions related to the file
+Optimized Workflow (If Supported by Technology)
+AI OCR Integration:
+Documents are automatically scanned, identified, and labeled using Optical Character Recognition.
+Admins will be prompted to approve or modify AI-suggested labels.
+Smart Categorization & Tagging:
+Documents are tagged by predefined categories (e.g., ID, income verification, purchase contract).
+File management UI displays documents grouped by category with filtering capabilities.
+Status & Review Interface:
+Each document displays:
+Current review status (e.g., Approved, Rejected, Pending)
+All version history
+Timestamped comments per version
+Clicking into a document opens a detail panel showing its progression, status, and reviewer notes.
+
+5.2 Advanced Notification System
+To ensure timely task completion and keep all users informed, the portal should offer flexible and intelligent notification capabilities.
+Configurable Notification Rules
+Admins and partners can define how often alerts are sent:
+Options include every 5 minutes, hourly, daily, or upon status changes.
+Notification triggers include:
+Document uploaded, approved, or rejected
+Loan status changes (e.g., “Ready to Fund”)
+Missing document reminders or borrower inactivity
+Multi-Channel Delivery
+Support for multiple communication channels:
+Email
+SMS
+In-app notifications
+Notifications should reflect partner branding where applicable.
+
+5.3 Integrated Team Communication & Collaboration
+Built-in messaging and tagging tools will facilitate collaboration within loan files and streamline coordination between internal teams, partners, and clients.
+Loan-Specific Chat & Internal Notes
+Embedded Chatbox:
+A chat window is visible within each loan record and at relevant workflow steps.
+Allows threaded conversations linked to actions or documents.
+Tagging System:
+Users can tag:
+Specific documents
+Individual team members
+Workflow steps
+Tags highlight items requiring attention or follow-up.
+Document Flagging:
+Users can mark documents as:
+Requires Review
+Urgent
+For Discussion
+                    
+
+Admin ↔ Partner/Client Communication
+Provide a secure communication channel for Admins to interact with Partner and Client users for:
+Quick clarifications
+Document approvals or resubmissions
+Future Enhancement: Enable external messaging to third-party participants (e.g., Title/Escrow) via:
+Anonymous secure email links (no login required)
+Prebuilt templates for common messages (e.g., “Please confirm wire instructions”)
+Centralized Communication Timeline
+Unified Log of All Communications:
+Includes emails, chat messages, and internal comments.
+Filtered by file, user, date, or type.
+Visibility Control:
+Admin Portal shows the full timeline.
+Partner and Client Portals display only relevant communications associated with that file and role.
+6. Additional Features Considered for Future Phases
+As the platform evolves, several advanced features are being planned to improve automation, expand integrations, and enhance decision support across the lending workflow. These additions are intended to further streamline operations, reduce manual workload, and provide smart tools to users at every level of the loan lifecycle.
+
+6.1 Third-Party Integrations
+To create a more seamless and automated lending process, we plan to integrate with industry-standard third-party service providers:
+Credit Pulling Services
+Integration with providers like Equifax, Experian, or TransUnion
+Enable real-time credit report generation during borrower intake or underwriting
+E-Signature Solutions
+Integration with platforms such as DocuSign, HelloSign, or Adobe Sign
+Facilitate fully digital, legally compliant loan confirmation and documentation
+Bank Statement Aggregation
+Partner with platforms like Plaid, Finicity, or Yodlee
+Allow borrowers to connect their bank accounts for secure financial verification
+Document Drawing and Packaging Tools
+Solutions like DocuPrep, DocMagic, or DocDraw
+Automate generation of loan packages based on approved terms
+
+6.2 Program Pricing & Guideline Chatbot
+To simplify access to product information and pricing:
+Chatbot Interface for Loan Scenarios
+Acts as an interactive tool for loan officers and partners to calculate program eligibility, pricing, and requirements
+Interfaces with backend rule engines to deliver accurate, scenario-based suggestions in real-time
+Examples of inputs:
+Credit score, loan amount, LTV, purpose
+Outputs: eligible programs, rates, required docs, max LTVs
+This feature will reduce the need for static rate sheets or manual lookups and increase speed and accuracy when quoting terms.
+
+6.3 Underwriting Logic & Automated Suggestions
+To support faster, more consistent underwriting decisions, we aim to introduce a rules-based underwriting engine with customizable logic.
+Preset Underwriting Conditions
+Admins define approval criteria for different loan types, partner tiers, or borrower profiles
+Examples:
+“If LTV > 70% AND FICO < 680 → Manual review required”
+“If cash reserves < 6 months → flag for review”
+Suggested Decisions
+Based on the data collected in borrower applications, the system will provide suggested actions:
+Approve / Decline / Send for Manual Review
+Identify specific red flags or missing documents impacting approval
+Partner-Specific Guidelines
+Ability to apply different rule sets per partner or per loan program
+
+6.4 AI Model Development & Workflow Automation
+As the system scales, we plan to incorporate AI tools to support high-volume workflows and repetitive tasks:
+Document Recognition & Classification
+Train AI models to automatically identify document types, extract key information (e.g., name, address, income), and assign them to appropriate categories
+Improve speed and accuracy of file reviews
+Underwriting Task Automation
+Use machine learning to analyze historical decisions and recommend outcomes or flag inconsistencies
+Gradual transition from rules-based logic to predictive analytics for faster, more confident approvals
+AI implementation is planned in phases, starting with document classification and expanding toward decision support over time.
+
+
+
+- You can @ files here
+- You can use markdown but dont have to

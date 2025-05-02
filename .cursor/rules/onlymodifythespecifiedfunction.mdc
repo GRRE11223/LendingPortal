@@ -1,0 +1,20 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+When I ask you to update or refactor a specific function or method, you MUST:
+    1. Only make changes **within that function**.
+    2. Do NOT change any other functions, variables, logic, or files.
+    3. Do NOT "improve", "optimize", or "clean up" unrelated parts of the code.
+    4. Do NOT reorder imports, rename variables, or make stylistic changes outside of the target scope.
+    5. Do NOT auto-fix unrelated issues or add comments unless explicitly told to.
+    Your job is to be precise, conservative, and focused **only** on the requested area.
+
+    Example:
+    ❌ Wrong: You update the function I requested but also renamed other variables or fixed other code smells.
+    ✅ Correct: You updated only the target function, leaving all other code untouched.
+
+  when_to_use: |
+
+    Use this rule **every time** I ask you to "change", "update", "fix", or "refactor" a specific function or component.
