@@ -4,7 +4,7 @@ import type { User } from '@/types';
 
 export async function GET() {
   try {
-    const users = userStore.list();
+    const users = await userStore.list();
     return NextResponse.json(users);
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
@@ -14,7 +14,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const data = await request.json();
-    const user = userStore.create(data);
+    const user = await userStore.createUser(data);
     return NextResponse.json(user);
   } catch (error) {
     console.error('Error creating user:', error);
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const user = await request.json();
-    const updated = userStore.update(user.id, user);
+    const updated = await userStore.updateUser(user.id, user);
     if (!updated) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -38,7 +38,7 @@ export async function PUT(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const { id } = await request.json();
-    const success = userStore.delete(id);
+    const success = await userStore.deleteUser(id);
     if (!success) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
