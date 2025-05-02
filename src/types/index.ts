@@ -63,7 +63,8 @@ export interface LoanRequest {
   id: string;
   userId: string;
   borrowerName: string;
-  borrowerInfo?: any;
+  borrowerInfo?: BorrowerInfo;
+  documents?: Document[];
   status: string;
   createdAt: string;
   updatedAt: string;
