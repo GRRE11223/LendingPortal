@@ -1,17 +1,43 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { updatedTestUsers } from '@/app/api/complete-registration/route';
 import Link from 'next/link';
 
-export default function TestUsers() {
-  const [users, setUsers] = useState(updatedTestUsers);
+interface TestUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role?: {
+    name: string;
+    permissions: string[];
+  };
+  status: string;
+  registrationToken?: string;
+  createdAt: string;
+  updatedAt: string;
+  passwordHash?: string;
+}
 
-  // 每秒更新一次用户列表以显示最新状态
+export default function TestUsers() {
+  const [users, setUsers] = useState<TestUser[]>([]);
+
   useEffect(() => {
-    const interval = setInterval(() => {
-      setUsers([...updatedTestUsers]);
-    }, 1000);
+    // 从 API 获取测试用户数据
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch('/api/test/users');
+        if (response.ok) {
+          const data = await response.json();
+          setUsers(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch test users:', error);
+      }
+    };
+
+    fetchUsers();
+    const interval = setInterval(fetchUsers, 1000);
 
     return () => clearInterval(interval);
   }, []);
