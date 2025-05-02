@@ -52,11 +52,20 @@ export interface Document {
   name: string;
   category: string;
   status: string;
-  versions?: any;
-  comments?: any;
+  versions?: {
+    url: string;
+    fileName: string;
+  }[];
+  comments?: {
+    text: string;
+    createdAt: string;
+    userId: string;
+  }[];
   loanRequestId: string;
   createdAt: string;
   updatedAt: string;
+  url?: string;
+  fileName?: string;
 }
 
 export interface LoanRequest {
