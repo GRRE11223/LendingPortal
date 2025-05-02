@@ -863,28 +863,28 @@ export default function TeamManagement() {
       <div className="container mx-auto py-8 px-4 max-w-6xl">
         <Tabs value={selectedTab} onValueChange={setSelectedTab}>
           <div className="flex justify-between items-center mb-8">
-            <TabsList className="bg-white p-1 rounded-xl border shadow-sm">
+            <TabsList className="flex gap-2 p-1">
               <TabsTrigger 
                 value="brokers" 
-                className="data-[state=active]:bg-blue-500 data-[state=active]:text-white rounded-lg px-6 py-2.5 transition-all duration-200"
+                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=inactive]:bg-gray-50 data-[state=inactive]:text-gray-600 rounded-lg px-6 py-2.5 transition-all duration-200 flex items-center gap-2 font-medium"
               >
-                <BuildingOfficeIcon className="h-4 w-4 mr-2 inline-block" />
+                <BuildingOfficeIcon className="h-4 w-4" />
                 Brokers
               </TabsTrigger>
               <TabsTrigger 
                 value="users" 
-                className="data-[state=active]:bg-blue-500 data-[state=active]:text-white rounded-lg px-6 py-2.5 transition-all duration-200"
+                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=inactive]:bg-gray-50 data-[state=inactive]:text-gray-600 rounded-lg px-6 py-2.5 transition-all duration-200 flex items-center gap-2 font-medium"
               >
-                <UserIcon className="h-4 w-4 mr-2 inline-block" />
+                <UserIcon className="h-4 w-4" />
                 Users
               </TabsTrigger>
             </TabsList>
             {selectedTab === 'brokers' && (
               <Button
                 onClick={() => setShowAddBroker(true)}
-                className="bg-blue-500 hover:bg-blue-600 text-white shadow-sm transition-all duration-200"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-full flex items-center gap-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
               >
-                <BuildingOfficeIcon className="h-5 w-5 mr-2" />
+                <BuildingOfficeIcon className="h-5 w-5" />
                 Add Broker
               </Button>
             )}

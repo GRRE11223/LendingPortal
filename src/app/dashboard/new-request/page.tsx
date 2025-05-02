@@ -34,9 +34,14 @@ interface LoanRequest {
     loanIntention: string;
     originator: string;
   };
-  escrow: {
+  escrowInfo: {
+    officerName: string;
     email: string;
+    phone: string;
     insuranceEmail: string;
+    documents: any[];
+  };
+  escrow: {
     initialFileSubmission: {
       name: string;
       url: string;
@@ -91,9 +96,11 @@ interface FormData {
     loanIntention: string;
     originator: string;
   };
-  escrow: {
+  escrowInfo: {
     email: string;
     insuranceEmail: string;
+  };
+  escrow: {
     initialFileSubmission: FileWithFolder[];
     isTbdEscrowEmail: boolean;
     isTbdInsuranceEmail: boolean;
@@ -135,9 +142,11 @@ export default function NewRequest() {
       loanIntention: '',
       originator: ''
     },
-    escrow: {
+    escrowInfo: {
       email: '',
-      insuranceEmail: '',
+      insuranceEmail: ''
+    },
+    escrow: {
       initialFileSubmission: [],
       isTbdEscrowEmail: false,
       isTbdInsuranceEmail: false
@@ -258,7 +267,7 @@ export default function NewRequest() {
         }
       }));
     }
-    else if (section === 'escrow' && field && section in formData) {
+    else if (section === 'escrowInfo' && field && section in formData) {
       let error = '';
       
       if (field === 'email' && !formData.escrow.isTbdEscrowEmail) {
@@ -271,8 +280,8 @@ export default function NewRequest() {
 
       setFormData(prev => ({
         ...prev,
-        escrow: {
-          ...prev.escrow,
+        escrowInfo: {
+          ...prev.escrowInfo,
           [field]: value
         }
       }));
@@ -454,8 +463,8 @@ export default function NewRequest() {
     // Validate all required fields before submission
     const emailError = validateEmail(formData.borrower.email);
     const phoneError = validatePhoneNumber(formData.borrower.contactNumber);
-    const escrowEmailError = !formData.escrow.isTbdEscrowEmail ? validateEmail(formData.escrow.email) : '';
-    const insuranceEmailError = !formData.escrow.isTbdInsuranceEmail ? validateEmail(formData.escrow.insuranceEmail) : '';
+    const escrowEmailError = !formData.escrow.isTbdEscrowEmail ? validateEmail(formData.escrowInfo.email) : '';
+    const insuranceEmailError = !formData.escrow.isTbdInsuranceEmail ? validateEmail(formData.escrowInfo.insuranceEmail) : '';
 
     setValidationErrors({
       email: emailError,
@@ -497,9 +506,14 @@ export default function NewRequest() {
           loanIntention: formData.loan.loanIntention,
           originator: formData.loan.originator
         },
+        escrowInfo: {
+          officerName: '',
+          email: formData.escrowInfo.email,
+          phone: '',
+          insuranceEmail: formData.escrowInfo.insuranceEmail,
+          documents: []
+        },
         escrow: {
-          email: formData.escrow.email,
-          insuranceEmail: formData.escrow.insuranceEmail,
           initialFileSubmission: formData.escrow.initialFileSubmission.map(file => ({
             name: file.name,
             url: file.url,
@@ -1047,8 +1061,8 @@ export default function NewRequest() {
                     <div>
                       <input
                         type="email"
-                        name="escrow.email"
-                        value={formData.escrow.email}
+                        name="escrowInfo.email"
+                        value={formData.escrowInfo.email}
                         onChange={handleChange}
                         disabled={formData.escrow.isTbdEscrowEmail}
                         required={!formData.escrow.isTbdEscrowEmail}
@@ -1086,8 +1100,8 @@ export default function NewRequest() {
                     <div>
                       <input
                         type="email"
-                        name="escrow.insuranceEmail"
-                        value={formData.escrow.insuranceEmail}
+                        name="escrowInfo.insuranceEmail"
+                        value={formData.escrowInfo.insuranceEmail}
                         onChange={handleChange}
                         disabled={formData.escrow.isTbdInsuranceEmail}
                         required={!formData.escrow.isTbdInsuranceEmail}

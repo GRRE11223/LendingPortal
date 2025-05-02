@@ -1,0 +1,18 @@
+[
+  {
+    "id": "c73f7554-d506-43f4-8c45-6417e8af9116",
+    "email": "geri@bluebono.com",
+    "firstName": "Geri",
+    "lastName": "Admin",
+    "role": {
+      "name": "SuperAdmin",
+      "permissions": [
+        "*"
+      ]
+    },
+    "passwordHash": "$2b$12$D8hetlNgm2viPPTK7Wn8Ce02VMkJ9Od7LMwwrkhzsP3BOpfgz8VBe",
+    "status": "active",
+    "createdAt": "2025-04-25T23:17:40.685Z",
+    "updatedAt": "2025-04-25T23:17:40.686Z"
+  }
+]

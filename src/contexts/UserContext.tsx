@@ -1,54 +1,83 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
+import type { User as DBUser } from '@/types';
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatar: string | null;
-}
+type User = DBUser;
 
 interface UserContextType {
   user: User | null;
-  updateUser: (userData: Partial<User>) => void;
+  updateUser: (userData: Partial<User>) => Promise<void>;
 }
 
-const defaultUser: User = {
-  id: 'guest',
-  name: 'Guest User',
-  email: '',
-  avatar: null
-};
-
 const UserContext = createContext<UserContextType>({
-  user: defaultUser,
-  updateUser: () => {}
+  user: null,
+  updateUser: async () => {}
 });
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User>(defaultUser);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    // 初始化时从 localStorage 读取用户数据
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      try {
-        const userData = JSON.parse(userStr);
-        setUser(userData);
-      } catch (error) {
-        console.error('Failed to parse user data:', error);
+    // 监听认证状态变化
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        // 获取用户详细信息
+        const { data: userData, error } = await supabase
+          .from('users')
+          .select('*, roles(*)')
+          .eq('id', session.user.id)
+          .single();
+
+        if (!error && userData) {
+          setUser(userData as User);
+        } else {
+          console.error('Failed to fetch user data:', error);
+          setUser(null);
+        }
+      } else {
+        setUser(null);
       }
-    }
+    });
+
+    // 初始化时检查当前会话
+    checkUser();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const updateUser = (userData: Partial<User>) => {
-    setUser(prev => {
-      const updated = { ...prev, ...userData };
-      // 更新 localStorage
-      localStorage.setItem('user', JSON.stringify(updated));
-      return updated;
-    });
+  const checkUser = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      const { data: userData, error } = await supabase
+        .from('users')
+        .select('*, roles(*)')
+        .eq('id', session.user.id)
+        .single();
+
+      if (!error && userData) {
+        setUser(userData as User);
+      }
+    }
+  };
+
+  const updateUser = async (userData: Partial<User>) => {
+    if (!user?.id) return;
+
+    const { error } = await supabase
+      .from('users')
+      .update(userData)
+      .eq('id', user.id);
+
+    if (error) {
+      console.error('Failed to update user:', error);
+      throw error;
+    }
+
+    setUser(prev => prev ? { ...prev, ...userData } : null);
   };
 
   const value = {

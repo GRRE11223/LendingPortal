@@ -10,7 +10,9 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
+import { UserIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 
 const agentFormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -36,56 +38,76 @@ export function AgentForm({ onSubmit, onCancel, brokerName }: AgentFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {brokerName && (
+          <div className="text-sm text-muted-foreground pb-4 border-b">
+            Adding team member to <span className="font-medium text-foreground">{brokerName}</span>
+          </div>
+        )}
+        
         <FormField
           control={form.control}
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-gray-700">Full Name</FormLabel>
+              <FormLabel className="text-base">Name</FormLabel>
+              <FormDescription>
+                Enter the full name of the team member
+              </FormDescription>
               <FormControl>
-                <Input 
-                  {...field} 
-                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  placeholder="Enter full name"
-                />
+                <div className="relative">
+                  <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    {...field} 
+                    className="pl-9" 
+                    placeholder="John Doe"
+                  />
+                </div>
               </FormControl>
-              <FormMessage className="text-red-600" />
+              <FormMessage />
             </FormItem>
           )}
         />
+        
         <FormField
           control={form.control}
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-gray-700">Email</FormLabel>
+              <FormLabel className="text-base">Email</FormLabel>
+              <FormDescription>
+                The invitation will be sent to this email address
+              </FormDescription>
               <FormControl>
-                <Input 
-                  {...field} 
-                  type="email" 
-                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  placeholder="agent@example.com"
-                />
+                <div className="relative">
+                  <EnvelopeIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    {...field} 
+                    type="email" 
+                    className="pl-9"
+                    placeholder="john@example.com"
+                  />
+                </div>
               </FormControl>
-              <FormMessage className="text-red-600" />
+              <FormMessage />
             </FormItem>
           )}
         />
-        <div className="flex justify-end gap-3 pt-4">
-          <Button 
-            type="button" 
-            variant="outline" 
+
+        <div className="flex justify-end gap-2 pt-4 border-t">
+          <Button
+            type="button"
+            variant="outline"
             onClick={onCancel}
-            className="bg-white hover:bg-gray-50"
+            className="min-w-[100px]"
           >
             Cancel
           </Button>
           <Button 
             type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            className="min-w-[100px]"
           >
-            Add Team Member
+            Add Member
           </Button>
         </div>
       </form>
