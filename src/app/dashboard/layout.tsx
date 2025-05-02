@@ -48,6 +48,7 @@ export default function DashboardLayout({
   const [user, setUser] = useState<any>(null);
   const pathname = usePathname();
   const router = useRouter();
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     // 从 localStorage 获取用户信息
@@ -103,7 +104,7 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="min-h-screen bg-[#f3f6fa] flex">
       <Transition.Root show={sidebarOpen} as={Fragment}>
         <Dialog as="div" className="relative z-50 lg:hidden" onClose={setSidebarOpen}>
           <Transition.Child
@@ -150,13 +151,13 @@ export default function DashboardLayout({
                   </div>
                 </Transition.Child>
                 <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white/95 backdrop-blur-sm px-6 pb-4 ring-1 ring-white/10">
-                  <div className="flex h-16 shrink-0 items-center">
+                  <div className="flex items-center py-6">
                     <Image
-                      className="h-8 w-auto"
+                      className="max-h-32 w-auto"
                       src="/logo.png"
                       alt="Company Logo"
-                      width={150}
-                      height={32}
+                      width={480}
+                      height={160}
                       priority
                     />
                   </div>
@@ -201,55 +202,58 @@ export default function DashboardLayout({
       </Transition.Root>
 
       {/* Static sidebar for desktop */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
-        <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white/95 backdrop-blur-sm px-6 pb-4 border-r border-slate-200/50">
-          <div className="flex h-16 shrink-0 items-center">
-            <Image
-              className="h-8 w-auto"
-              src="/logo.png"
-              alt="Company Logo"
-              width={150}
-              height={32}
-              priority
-            />
-          </div>
-          <nav className="flex flex-1 flex-col">
-            <ul role="list" className="flex flex-1 flex-col gap-y-7">
-              <li>
-                <ul role="list" className="-mx-2 space-y-1">
-                  {navigation.map((item) => (
-                    <li key={item.name}>
-                      <Link
-                        href={item.href}
+      <div className={`hidden lg:flex flex-col gap-y-5 p-6 m-4 ${collapsed ? 'w-20' : 'w-56'} h-[calc(100vh-2rem)] transition-all duration-300`}>
+        <div className="flex items-center py-6 justify-between">
+          <Image
+            className="max-h-32 w-auto"
+            src="/logo.png"
+            alt="Company Logo"
+            width={collapsed ? 40 : 120}
+            height={collapsed ? 40 : 48}
+            priority
+          />
+          <button onClick={() => setCollapsed(!collapsed)} className="ml-2 p-1 rounded hover:bg-gray-200 transition-all">
+            {collapsed ? <span>&#9654;</span> : <span>&#9664;</span>}
+          </button>
+        </div>
+        <nav className="flex flex-1 flex-col">
+          <ul role="list" className="flex flex-1 flex-col gap-y-7">
+            <li>
+              <ul role="list" className="-mx-2 space-y-1">
+                {navigation.map((item) => (
+                  <li key={item.name}>
+                    <Link
+                      href={item.href}
+                      className={classNames(
+                        pathname === item.href
+                          ? 'bg-white/60 text-blue-600 shadow rounded-xl'
+                          : 'text-gray-700 hover:text-blue-600 hover:bg-white/40 hover:shadow rounded-xl',
+                        'group flex gap-x-3 p-2 text-sm leading-6 font-semibold transition-all duration-200',
+                        collapsed ? 'justify-center' : ''
+                      )}
+                    >
+                      <item.icon
                         className={classNames(
                           pathname === item.href
-                            ? 'bg-blue-50/50 text-blue-600'
-                            : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50/50',
-                          'group flex gap-x-3 rounded-xl p-2 text-sm leading-6 font-semibold transition-all duration-200'
+                            ? 'text-blue-600'
+                            : 'text-gray-400 group-hover:text-blue-600',
+                          'h-6 w-6 shrink-0 transition-colors duration-200'
                         )}
-                      >
-                        <item.icon
-                          className={classNames(
-                            pathname === item.href
-                              ? 'text-blue-600'
-                              : 'text-gray-400 group-hover:text-blue-600',
-                            'h-6 w-6 shrink-0 transition-colors duration-200'
-                          )}
-                          aria-hidden="true"
-                        />
-                        {item.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </li>
-            </ul>
-          </nav>
-        </div>
+                        aria-hidden="true"
+                      />
+                      {!collapsed && item.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </li>
+          </ul>
+        </nav>
       </div>
 
-      <div className="lg:pl-72">
-        <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-slate-200/50 bg-white/80 backdrop-blur-sm px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
+      <div className="flex-1 flex flex-col gap-6">
+        {/* 顶部栏 */}
+        <div className="sticky top-0 z-40 flex h-16 items-center bg-white/60 backdrop-blur-md rounded-2xl shadow-lg px-6 m-4">
           <button
             type="button"
             className="-m-2.5 p-2.5 text-gray-700 lg:hidden"
@@ -327,8 +331,9 @@ export default function DashboardLayout({
           </div>
         </div>
 
-        <main className="py-10">
-          <div className="px-4 sm:px-6 lg:px-8">
+        {/* 主内容区 */}
+        <main className="flex-1 py px-6 bg-transparent">
+          <div className="p-8 w-full min-h-[calc(100vh-5rem)] bg-transparent">
             {children}
           </div>
         </main>

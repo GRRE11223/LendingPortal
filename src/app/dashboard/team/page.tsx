@@ -10,31 +10,332 @@ import {
   BuildingOfficeIcon,
   ShieldCheckIcon,
   XMarkIcon,
+  EnvelopeIcon,
+  ClockIcon,
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline';
-import { User, Role, BrokerCompany, DEFAULT_ROLES, Permission, PERMISSIONS } from '@/types';
+import { User, Broker, Agent } from '@/types';
+import { supabase } from '@/lib/supabase';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { createClient } from '@/lib/supabase/client';
+import { Textarea } from '@/components/ui/textarea';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogCancel,
+  AlertDialogFooter,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog';
+import { randomBytes } from 'crypto';
+
+// Form schemas
+const brokerFormSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email().optional().or(z.literal('')),
+  phone: z.string().optional().or(z.literal('')),
+  address: z.string().optional().or(z.literal('')),
+  website: z.string().url().optional().or(z.literal('')),
+});
+
+const agentFormSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email('Invalid email address'),
+});
+
+type BrokerFormData = z.infer<typeof brokerFormSchema>;
+type AgentFormData = z.infer<typeof agentFormSchema>;
+
+interface DeleteButtonProps {
+  onDelete: (id: string) => Promise<void>;
+  id: string;
+}
+
+const DeleteButton: React.FC<DeleteButtonProps> = ({ onDelete, id }) => {
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const handleCancel = () => {
+    setShowConfirm(false);
+  };
+
+  const handleConfirm = async () => {
+    try {
+      await onDelete(id);
+      setShowConfirm(false);
+    } catch (error) {
+      console.error('Delete operation failed:', error);
+      toast.error('Failed to delete');
+    }
+  };
+
+  return (
+    <>
+    <button
+        onClick={() => setShowConfirm(true)}
+        className="text-red-600 hover:text-red-900 transition-colors duration-200"
+      type="button"
+    >
+      <TrashIcon className="h-5 w-5" aria-hidden="true" />
+    </button>
+
+      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+        <AlertDialogContent className="bg-white p-6 rounded-lg shadow-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-semibold text-gray-900">
+              Confirm Deletion
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-500 mt-2">
+              Are you sure you want to delete this item? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-6 flex justify-end gap-3">
+            <AlertDialogCancel 
+              onClick={handleCancel}
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors duration-200"
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirm}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-200"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+};
+
+const BrokerForm = ({ onSubmit, onCancel, initialData }: { onSubmit: (data: BrokerFormData) => void, onCancel: () => void, initialData?: BrokerFormData }) => {
+  const form = useForm<BrokerFormData>({
+    resolver: zodResolver(brokerFormSchema),
+    defaultValues: initialData || {
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    website: '',
+    },
+  });
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-gray-700">Company Name</FormLabel>
+              <FormControl>
+                <Input 
+                  {...field} 
+                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="Enter company name"
+                />
+              </FormControl>
+              <FormMessage className="text-red-600" />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-gray-700">Email</FormLabel>
+              <FormControl>
+                <Input 
+                  {...field} 
+                  type="email" 
+                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="company@example.com"
+                />
+              </FormControl>
+              <FormMessage className="text-red-600" />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-gray-700">Phone</FormLabel>
+              <FormControl>
+                <Input 
+                  {...field} 
+                  type="tel" 
+                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="(555) 555-5555"
+                />
+              </FormControl>
+              <FormMessage className="text-red-600" />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="address"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-gray-700">Address</FormLabel>
+              <FormControl>
+                <Textarea 
+                  {...field} 
+                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 min-h-[80px]"
+                  placeholder="Enter company address"
+                />
+              </FormControl>
+              <FormMessage className="text-red-600" />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="website"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-gray-700">Website</FormLabel>
+              <FormControl>
+                <Input 
+                  {...field} 
+                  type="url" 
+                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="https://example.com"
+                />
+              </FormControl>
+              <FormMessage className="text-red-600" />
+            </FormItem>
+          )}
+        />
+        <div className="flex justify-end gap-3 pt-4">
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={onCancel}
+            className="bg-white hover:bg-gray-50"
+          >
+            Cancel
+          </Button>
+          <Button 
+            type="submit"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            {initialData ? 'Update Broker' : 'Add Broker'}
+          </Button>
+        </div>
+      </form>
+    </Form>
+  );
+};
+
+const AgentForm = ({ onSubmit, onCancel, brokerName }: { onSubmit: (data: AgentFormData) => void, onCancel: () => void, brokerName: string | undefined }) => {
+  const form = useForm<AgentFormData>({
+    resolver: zodResolver(agentFormSchema),
+    defaultValues: {
+    name: '',
+    email: '',
+    },
+  });
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-gray-700">Full Name</FormLabel>
+              <FormControl>
+                <Input 
+                  {...field} 
+                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="Enter full name"
+                />
+              </FormControl>
+              <FormMessage className="text-red-600" />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-gray-700">Email</FormLabel>
+              <FormControl>
+                <Input 
+                  {...field} 
+                  type="email" 
+                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="agent@example.com"
+                />
+              </FormControl>
+              <FormMessage className="text-red-600" />
+            </FormItem>
+          )}
+        />
+        <div className="flex justify-end gap-3 pt-4">
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={onCancel}
+            className="bg-white hover:bg-gray-50"
+          >
+            Cancel
+          </Button>
+          <Button 
+            type="submit"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            Add Team Member
+          </Button>
+        </div>
+      </form>
+    </Form>
+  );
+};
+
+// Add this helper function at the top level of the file
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date);
+};
 
 export default function TeamManagement() {
   const [users, setUsers] = useState<User[]>([]);
-  const [brokerCompanies, setBrokerCompanies] = useState<BrokerCompany[]>([]);
-  const [selectedTab, setSelectedTab] = useState<'brokers' | 'admin'>('brokers');
-  const [showAddUser, setShowAddUser] = useState(false);
+  const [brokers, setBrokers] = useState<Broker[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
   const [showAddBroker, setShowAddBroker] = useState(false);
-  const [selectedBroker, setSelectedBroker] = useState<string | null>(null);
-  const [showRoles, setShowRoles] = useState(false);
-  const [showAddRole, setShowAddRole] = useState(false);
-  const [selectedBrokerForRoles, setSelectedBrokerForRoles] = useState<string | null>(null);
-
-  // 新用户表单状态
-  const [newUser, setNewUser] = useState({
-    email: '',
-    firstName: '',
-    lastName: '',
-    roleId: '',
-    brokerId: '',
-    phoneNumber: '',
-  });
-
-  // 新经纪公司表单状态
+  const [showAddAgent, setShowAddAgent] = useState(false);
   const [newBroker, setNewBroker] = useState({
     name: '',
     email: '',
@@ -42,896 +343,863 @@ export default function TeamManagement() {
     address: '',
     website: '',
   });
-
-  // 新角色表单状态
-  const [newRole, setNewRole] = useState({
-    name: '',
-    description: '',
-    permissions: [] as string[],
+  const [newAgent, setNewAgent] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phoneNumber: '',
+    brokerId: '',
   });
+  const [selectedBroker, setSelectedBroker] = useState<Broker | null>(null);
+  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  const [showEditBroker, setShowEditBroker] = useState(false);
+  const [showEditAgent, setShowEditAgent] = useState(false);
+  const [editedBroker, setEditedBroker] = useState<Broker | null>(null);
+  const [editedAgent, setEditedAgent] = useState<Agent | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ type: 'broker' | 'agent'; id: string } | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState<'brokers' | 'agents'>('brokers');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const supabase = createClient();
 
-  // Add new state for edit mode
-  const [editingBroker, setEditingBroker] = useState<BrokerCompany | null>(null);
+  // Add loading state for send invitation button
+  const [sendingInvitations, setSendingInvitations] = useState<Record<string, boolean>>({});
 
-  // 从 localStorage 加载数据
+  // Add new state for tracking invitation status
+  const [invitationStatus, setInvitationStatus] = useState<Record<string, { 
+    status: 'none' | 'sending' | 'sent' | 'error',
+    lastSentAt?: string,
+    error?: string 
+  }>>({});
+
   useEffect(() => {
-    const storedUsers = localStorage.getItem('users');
-    const storedBrokers = localStorage.getItem('brokerCompanies');
-    
-    if (storedUsers) {
-      setUsers(JSON.parse(storedUsers));
-    }
-    
-    if (storedBrokers) {
-      setBrokerCompanies(JSON.parse(storedBrokers));
-    }
+    fetchData();
   }, []);
 
-  // 保存用户数据到 localStorage
-  const saveUsers = (updatedUsers: User[]) => {
+  const fetchData = async () => {
     try {
-      localStorage.setItem('users', JSON.stringify(updatedUsers));
-      setUsers(updatedUsers);
-    } catch (error) {
-      console.error('Failed to save users:', error);
-      toast.error('Failed to save users');
+      setIsLoading(true);
+      setError(null);
+
+      if (!supabase) {
+        throw new Error('Supabase client not initialized');
+      }
+
+      const brokersResult = await supabase
+        .from('Broker')
+        .select('*')
+        .order('createdAt', { ascending: false });
+
+      if (brokersResult.error) {
+        throw new Error(`Failed to fetch brokers: ${brokersResult.error.message}`);
+      }
+
+      const agentsResult = await supabase
+        .from('Agent')
+        .select('*, user:User(*)')
+        .order('createdAt', { ascending: false });
+
+      if (agentsResult.error) {
+        throw new Error(`Failed to fetch agents: ${agentsResult.error.message}`);
+      }
+
+      const usersResult = await supabase
+        .from('User')
+        .select('*')
+        .order('createdAt', { ascending: false });
+
+      if (usersResult.error) {
+        throw new Error(`Failed to fetch users: ${usersResult.error.message}`);
+      }
+
+      setBrokers(brokersResult.data || []);
+      setAgents(agentsResult.data || []);
+      setUsers(usersResult.data || []);
+    } catch (err) {
+      console.error('Error in fetchData:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch data';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // 添加用户
-  const handleAddUser = () => {
-    const roles = getRoles(selectedTab === 'admin' ? undefined : selectedBroker || newUser.brokerId);
-    const selectedRole = roles.find(role => role.id === newUser.roleId);
+  const handleAddBroker = async () => {
+    try {
+      // 检查认证状态
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Please login first');
+        return;
+      }
 
-    if (!selectedRole) {
-      console.error('Selected role not found');
+      // 检查必填字段
+      if (!newBroker.name || !newBroker.email) {
+        toast.error('Company name and email are required');
+        return;
+      }
+
+      const response = await fetch('/api/brokers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newBroker.name,
+          email: newBroker.email,
+          phone: newBroker.phone || null,
+          address: newBroker.address || null,
+          website: newBroker.website || null,
+          status: 'active'
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to add broker');
+      }
+
+      const data = await response.json();
+      setBrokers(prev => [...prev, data]);
+      setShowAddBroker(false);
+      setNewBroker({
+        name: '',
+        email: '',
+        phone: '',
+        address: '',
+        website: '',
+      });
+      toast.success('Broker company added successfully');
+    } catch (error) {
+      console.error('Error adding broker:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to add broker');
+    }
+  };
+
+  const handleDeleteBroker = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('Broker')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setBrokers(prev => prev.filter(b => b.id !== id));
+      toast.success('Broker deleted successfully');
+    } catch (err) {
+      toast.error('Failed to delete broker');
+    }
+  };
+
+  const handleAddAgent = async (data: AgentFormData) => {
+    if (!selectedBroker) {
+      toast.error('Please select a broker first');
       return;
     }
 
-    let brokerCompany: BrokerCompany | undefined = undefined;
-    if (selectedRole.scope === 'agent') {
-      brokerCompany = brokerCompanies.find(broker => broker.id === (selectedBroker || newUser.brokerId));
-      if (!brokerCompany) {
-        console.error('Broker company not found');
-        return;
+    try {
+      // Only create the Agent record initially
+      const { data: newAgent, error: agentError } = await supabase
+        .from('Agent')
+        .insert([{
+          email: data.email,
+          name: data.name,
+          brokerId: selectedBroker.id,
+          status: 'draft',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }])
+        .select()
+        .single();
+
+      if (agentError) {
+        console.error('Failed to create agent:', agentError);
+        throw agentError;
       }
+
+      setAgents(prev => [newAgent, ...prev]);
+      setShowAddAgent(false);
+      toast.success('Team member added successfully');
+    } catch (err) {
+      console.error('Error in handleAddAgent:', err);
+      toast.error('Failed to add team member');
     }
-
-    const user: User = {
-      id: Math.random().toString(36).substr(2, 9),
-      email: newUser.email,
-      firstName: newUser.firstName,
-      lastName: newUser.lastName,
-      role: selectedRole,
-      status: 'active',
-      brokerCompany,
-      isAdmin: selectedRole.scope === 'admin',
-      phoneNumber: newUser.phoneNumber,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    const updatedUsers = [...users, user];
-    saveUsers(updatedUsers);
-    setShowAddUser(false);
-    setNewUser({
-      email: '',
-      firstName: '',
-      lastName: '',
-      roleId: '',
-      brokerId: '',
-      phoneNumber: '',
-    });
-    toast.success('User added successfully');
   };
 
-  // 添加经纪公司
-  const handleAddBroker = () => {
-    const broker: BrokerCompany = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: newBroker.name,
-      status: 'active',
-      email: newBroker.email,
-      phone: newBroker.phone,
-      address: newBroker.address,
-      website: newBroker.website,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    const updatedBrokers = [...brokerCompanies, broker];
-    setBrokerCompanies(updatedBrokers);
-    localStorage.setItem('brokerCompanies', JSON.stringify(updatedBrokers));
-    setShowAddBroker(false);
-    setNewBroker({
-      name: '',
-      email: '',
-      phone: '',
-      address: '',
-      website: '',
-    });
-    toast.success('Broker company added successfully');
-  };
-
-  // 删除用户
-  const handleDeleteUser = (userId: string) => {
-    const updatedUsers = users.filter(user => user.id !== userId);
-    saveUsers(updatedUsers);
-    toast.success('User deleted successfully');
-  };
-
-  // 删除经纪公司
-  const handleDeleteBroker = (brokerId: string) => {
-    const updatedBrokers = brokerCompanies.filter(broker => broker.id !== brokerId);
-    setBrokerCompanies(updatedBrokers);
-    localStorage.setItem('brokerCompanies', JSON.stringify(updatedBrokers));
+  const handleSendInvite = async (agentId: string) => {
+    console.log('Starting handleSendInvite for agent:', agentId);
     
-    // 同时更新相关用户
-    const updatedUsers = users.map(user => {
-      if (user.brokerCompany?.id === brokerId) {
-        return { ...user, status: 'inactive' as const };
-      }
-      return user;
-    });
-    saveUsers(updatedUsers);
-  };
-
-  // 获取特定经纪公司的用户
-  const getBrokerUsers = (brokerId: string) => {
-    return users.filter(user => user.brokerCompany?.id === brokerId);
-  };
-
-  // 获取管理员用户
-  const getAdminUsers = () => {
-    return users.filter(user => user.isAdmin);
-  };
-
-  // 获取角色列表
-  const getRoles = (brokerId?: string) => {
-    if (brokerId) {
-      // Get broker's agent roles
-      const broker = brokerCompanies.find(b => b.id === brokerId);
-      const agentRole = DEFAULT_ROLES.find(role => role.scope === 'agent');
-      const brokerCustomRoles = broker?.customRoles || [];
-      
-      // Filter custom roles to only include those belonging to this broker
-      const storedRoles = JSON.parse(localStorage.getItem('customRoles') || '[]');
-      const brokerStoredRoles = storedRoles.filter((role: Role) => role.brokerId === brokerId);
-      
-      return [
-        { ...agentRole!, brokerId }, // Add brokerId to the default agent role
-        ...brokerCustomRoles,
-        ...brokerStoredRoles
-      ];
-    } else {
-      // Get admin roles
-      const adminRole = DEFAULT_ROLES.find(role => role.scope === 'admin');
-      const storedRoles = JSON.parse(localStorage.getItem('customRoles') || '[]');
-      const adminStoredRoles = storedRoles.filter((role: Role) => role.scope === 'admin');
-      
-      return [adminRole!, ...adminStoredRoles];
+    const agent = agents.find(a => a.id === agentId);
+    if (!agent) {
+      console.error('Agent not found:', agentId);
+      toast.error('Agent not found');
+      return;
     }
-  };
 
-  // 添加自定义角色
-  const handleAddRole = () => {
-    const role: Role = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: newRole.name,
-      description: newRole.description,
-      permissions: newRole.permissions as Permission[],
-      scope: selectedTab === 'admin' ? 'admin' : 'agent',
-      brokerId: selectedBrokerForRoles || undefined,
-      isCustom: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    try {
+      setSendingInvitations(prev => ({ ...prev, [agentId]: true }));
+      console.log('Processing invitation for agent:', agent.email);
 
-    const storedRoles = JSON.parse(localStorage.getItem('customRoles') || '[]');
-    const updatedRoles = [...storedRoles, role];
-    localStorage.setItem('customRoles', JSON.stringify(updatedRoles));
+      // 先检查用户是否已存在
+      const { data: existingUser, error: checkError } = await supabase
+        .from('User')
+        .select('id, status')
+        .eq('email', agent.email)
+        .single();
 
-    setShowAddRole(false);
-    setNewRole({
-      name: '',
-      description: '',
-      permissions: [],
-    });
-    toast.success('Custom role added successfully');
-  };
+      let userId = agent.userId;
 
-  // 删除自定义角色
-  const handleDeleteRole = (roleId: string, brokerId?: string) => {
-    if (brokerId) {
-      // 删除经纪公司的自定义角色
-      const updatedBrokers = brokerCompanies.map(broker => {
-        if (broker.id === brokerId) {
-          return {
-            ...broker,
-            customRoles: broker.customRoles?.filter(role => role.id !== roleId) || [],
-          };
+      if (existingUser) {
+        console.log('User already exists:', existingUser);
+        userId = existingUser.id;
+        
+        // 如果用户存在但状态不是 pending，则更新状态
+        if (existingUser.status !== 'pending') {
+          const { error: updateUserError } = await supabase
+            .from('User')
+            .update({
+              status: 'pending',
+              updatedAt: new Date().toISOString()
+            })
+            .eq('id', userId);
+
+          if (updateUserError) {
+            console.error('Failed to update user:', updateUserError);
+            throw new Error(`Failed to update user: ${updateUserError.message}`);
+          }
         }
-        return broker;
+      } else {
+        // 创建新用户
+        console.log('Creating new user record for agent:', agent.email);
+        const { data: newUser, error: userError } = await supabase
+          .from('User')
+          .insert([{
+            id: crypto.randomUUID(),
+            email: agent.email,
+            name: agent.name,
+            role: 'Agent',
+            status: 'pending',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }])
+          .select()
+          .single();
+
+        if (userError) {
+          console.error('Failed to create user:', userError);
+          throw new Error(`Failed to create user: ${userError.message}`);
+        }
+
+        console.log('User created successfully:', newUser);
+        userId = newUser.id;
+      }
+
+      // 生成邀请 token
+      const invitationToken = randomBytes(32).toString('hex');
+      const now = new Date().toISOString();
+
+      // 更新 Agent 状态和 token
+      console.log('Updating agent with userId and token:', userId);
+      
+      const { error: updateError } = await supabase
+        .from('Agent')
+        .update({ 
+          userId: userId,
+          status: 'pending',
+          invitationSentAt: now,
+          invitationToken: invitationToken,
+          updatedAt: now
+        })
+        .eq('id', agentId);
+
+      if (updateError) {
+        console.error('Failed to update agent:', updateError);
+        throw new Error(`Failed to update agent: ${updateError.message}`);
+      }
+
+      console.log('Agent updated successfully');
+
+      // 发送邀请邮件
+      console.log('Sending invitation email');
+      const response = await fetch('/api/send-invitation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: agent.email,
+          name: agent.name,
+          role: 'Agent',
+          token: invitationToken  // 传递 token 到邮件发送 API
+        })
       });
-      setBrokerCompanies(updatedBrokers);
-      localStorage.setItem('brokerCompanies', JSON.stringify(updatedBrokers));
-    } else {
-      // 删除系统自定义角色
-      const storedRoles = localStorage.getItem('customRoles') || '[]';
-      const customRoles = JSON.parse(storedRoles);
-      const updatedRoles = customRoles.filter((role: Role) => role.id !== roleId);
-      localStorage.setItem('customRoles', JSON.stringify(updatedRoles));
+
+      if (!response.ok) {
+        const responseData = await response.json();
+        throw new Error(`Failed to send invitation email: ${responseData.error || 'Unknown error'}`);
+      }
+
+      // 更新本地状态
+      setAgents(prev => prev.map(a => 
+        a.id === agentId 
+          ? { 
+              ...a, 
+              userId: userId,
+              status: 'pending',
+              invitationSentAt: now,
+              invitationToken: invitationToken
+            }
+          : a
+      ));
+
+      console.log('Invitation process completed successfully');
+      toast.success('Invitation sent successfully');
+    } catch (err) {
+      console.error('Error in handleSendInvite:', err);
+      toast.error(err instanceof Error ? err.message : 'Failed to send invitation');
+    } finally {
+      setSendingInvitations(prev => ({ ...prev, [agentId]: false }));
     }
-    toast.success('Custom role deleted successfully');
   };
 
-  // Add edit broker function
-  const handleEditBroker = () => {
-    if (!editingBroker) return;
-    
-    const updatedBrokers = brokerCompanies.map(broker => 
-      broker.id === editingBroker.id ? editingBroker : broker
-    );
-    
-    setBrokerCompanies(updatedBrokers);
-    localStorage.setItem('brokerCompanies', JSON.stringify(updatedBrokers));
-    setEditingBroker(null);
-    toast.success('Broker company updated successfully');
+  const handleDeleteAgent = async (id: string) => {
+    try {
+      const agent = agents.find(a => a.id === id);
+      if (!agent) return;
+
+      // Delete the agent
+      const { error: agentError } = await supabase
+        .from('Agent')
+        .delete()
+        .eq('id', id);
+      
+      if (agentError) throw agentError;
+
+      // Delete the associated user
+      if (agent.userId) {
+        const { error: userError } = await supabase
+          .from('User')
+          .delete()
+          .eq('id', agent.userId);
+        
+        if (userError) throw userError;
+      }
+
+      setAgents(prev => prev.filter(a => a.id !== id));
+      toast.success('Team member removed successfully');
+    } catch (err) {
+      toast.error('Failed to remove team member');
+    }
   };
 
-  // 渲染角色管理模态框
-  const renderRolesModal = () => {
-    const roles = getRoles(selectedBrokerForRoles || undefined);
-    const title = selectedBrokerForRoles 
-      ? `Manage ${brokerCompanies.find(b => b.id === selectedBrokerForRoles)?.name} Roles`
-      : 'Manage System Roles';
+  const handleEditBroker = async (data: BrokerFormData) => {
+    if (!editedBroker) return;
 
+    try {
+      const { data: updatedBroker, error } = await supabase
+        .from('Broker')
+        .update({
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          address: data.address,
+          website: data.website,
+      updatedAt: new Date().toISOString()
+        })
+        .eq('id', editedBroker.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setBrokers(prev => prev.map(b => 
+        b.id === editedBroker.id ? updatedBroker : b
+      ));
+      setShowEditBroker(false);
+      setEditedBroker(null);
+      toast.success('Broker updated successfully');
+    } catch (err) {
+      toast.error('Failed to update broker');
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!itemToDelete) return;
+    
+    try {
+      const { type, id } = itemToDelete;
+      if (type === 'broker') {
+        await handleDeleteBroker(id);
+      } else if (type === 'agent') {
+        await handleDeleteAgent(id);
+      }
+      setItemToDelete(null);
+      setShowDeleteConfirm(false);
+    } catch (err) {
+      toast.error('Failed to delete item');
+    }
+  };
+
+  const renderBrokers = () => {
+    if (!brokers.length) {
     return (
-      <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
-        <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-medium text-gray-900">{title}</h3>
-            <button
-              onClick={() => {
-                setShowRoles(false);
-                setSelectedBrokerForRoles(null);
-              }}
-              className="text-gray-400 hover:text-gray-500"
-            >
-              <XMarkIcon className="h-6 w-6" />
-            </button>
-          </div>
-
-          <div className="mb-6">
-            <button
-              onClick={() => setShowAddRole(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <ShieldCheckIcon className="h-5 w-5 mr-2" />
-              Add Custom Role
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6">
-            {roles.map(role => (
-              <div
-                key={role.id}
-                className="bg-white border rounded-lg shadow-sm p-6"
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="text-lg font-medium text-gray-900 flex items-center">
-                      {role.name}
-                      {!role.isCustom && (
-                        <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                          Default
-                        </span>
-                      )}
-                    </h4>
-                    <p className="mt-1 text-sm text-gray-500">{role.description}</p>
-                  </div>
-                  {role.isCustom && (
-                    <button
-                      onClick={() => handleDeleteRole(role.id, selectedBrokerForRoles || undefined)}
-                      className="text-red-400 hover:text-red-500"
-                    >
-                      <TrashIcon className="h-5 w-5" />
-                    </button>
-                  )}
-                </div>
-                <div className="mt-4">
-                  <h5 className="text-sm font-medium text-gray-700 mb-2">Permissions</h5>
-                  <div className="flex flex-wrap gap-2">
-                    {role.permissions.map((permission: string) => (
-                      <span
-                        key={permission}
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                      >
-                        {permission}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <div className="text-center text-gray-500 mt-8">
+          No brokers found. Add your first broker to get started.
       </div>
     );
+    }
+
+    return brokers.map((broker) => {
+      const brokerAgents = agents.filter((a) => a.brokerId === broker.id);
+
+  return (
+        <div key={broker.id} className="mb-8 bg-white rounded-lg shadow-md p-6">
+          <div className="flex justify-between items-center mb-4">
+          <div>
+              <h3 className="text-xl font-semibold">{broker.name}</h3>
+              <p className="text-gray-600">{broker.email}</p>
+          </div>
+            <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                  setEditedBroker(broker);
+                  setShowEditBroker(true);
+                            }}
+                className="px-4 py-2 text-sm bg-white text-blue-600 rounded-full border border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 flex items-center gap-2 shadow-sm"
+                          >
+                <PencilIcon className="h-4 w-4" />
+                Edit
+                          </button>
+              <DeleteButton onDelete={handleDeleteBroker} id={broker.id} />
+                      </div>
+                    </div>
+
+          <div className="mt-6">
+                      <div className="flex justify-between items-center mb-4">
+              <h4 className="text-lg font-medium">Team Members</h4>
+                        <button
+                          onClick={() => {
+                  setSelectedBroker(broker);
+                  setShowAddAgent(true);
+                          }}
+                className="px-5 py-2.5 bg-blue-600 text-white rounded-full flex items-center gap-2 hover:bg-blue-700 transform hover:-translate-y-0.5 transition-all duration-200 shadow-md hover:shadow-lg"
+                        >
+                <UserPlusIcon className="h-5 w-5" />
+                Add Team Member
+                        </button>
+                      </div>
+
+            {brokerAgents.length > 0 ? (
+              <div className="grid gap-4">
+                {brokerAgents.map((agent) => (
+                  <div
+                    key={agent.id}
+                    className="flex justify-between items-center p-6 border border-gray-200 rounded-xl transition-all duration-200 hover:border-blue-200 hover:shadow-sm"
+                  >
+                    <div className="flex-grow">
+                      <div className="flex items-center gap-3">
+                        <div className="font-medium text-gray-900">{agent.name}</div>
+                        <Badge variant="outline" className={`px-3 py-0.5 rounded-full text-xs font-medium border ${
+                          agent.status === 'pending' ? 'border-yellow-200 bg-yellow-50 text-yellow-700' :
+                          agent.status === 'active' ? 'border-green-200 bg-green-50 text-green-700' :
+                          'border-gray-200 bg-gray-50 text-gray-700'
+                        }`}>
+                          {agent.status === 'draft' ? 'Draft' :
+                           agent.status === 'pending' ? 'Pending' :
+                           agent.status === 'active' ? 'Active' : agent.status}
+                        </Badge>
+                    </div>
+                      <div className="text-gray-500 text-sm mt-1">{agent.email}</div>
+                      {agent.invitationSentAt && (
+                        <div className="flex items-center gap-2 text-gray-400 text-xs mt-2">
+                          <ClockIcon className="h-3.5 w-3.5" />
+                          Invitation sent: {formatDate(agent.invitationSentAt)}
+                  </div>
+              )}
+            </div>
+                    <div className="flex items-center gap-3">
+                      {agent.status !== 'active' && (
+                <button
+                          onClick={() => handleSendInvite(agent.id)}
+                          disabled={sendingInvitations[agent.id]}
+                          className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-2
+                            ${agent.status === 'pending' 
+                              ? 'bg-white text-yellow-600 border border-yellow-200 hover:bg-yellow-50 hover:border-yellow-300' 
+                              : 'bg-blue-600 text-white hover:bg-blue-700 transform hover:-translate-y-0.5'}
+                            ${sendingInvitations[agent.id] ? 'opacity-75 cursor-not-allowed' : ''}
+                            shadow-sm hover:shadow
+                          `}
+                        >
+                          {sendingInvitations[agent.id] ? (
+                            <>
+                              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                              </svg>
+                              Sending...
+                            </>
+                          ) : (
+                            <>
+                              <EnvelopeIcon className="h-4 w-4" />
+                              {agent.invitationSentAt ? 'Resend Invite' : 'Send Invite'}
+                            </>
+                          )}
+                </button>
+                      )}
+                      <DeleteButton onDelete={handleDeleteAgent} id={agent.id} />
+                            </div>
+                          </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-gray-500 py-4">
+                No team members yet. Add your first team member to get started.
+          </div>
+        )}
+                </div>
+        </div>
+      );
+    });
   };
 
-  // Update broker header render function
-  const renderBrokerHeader = (broker: BrokerCompany) => (
-    <div className="flex items-center space-x-2">
-      <button
-        onClick={() => {
-          setSelectedBrokerForRoles(broker.id);
-          setShowRoles(true);
-        }}
-        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+  const renderUsers = () => {
+    return users.map(user => (
+      <Card 
+        key={user.id} 
+        className="backdrop-blur-sm bg-white/30 border border-white/20 mb-4 hover:shadow-lg hover:bg-white/40 transition-all duration-300"
       >
-        <ShieldCheckIcon className="h-4 w-4 mr-1" />
-        Manage Roles
-      </button>
-      <button
-        onClick={() => setEditingBroker(broker)}
-        className="text-gray-400 hover:text-gray-500"
-      >
-        <PencilIcon className="h-5 w-5" />
-      </button>
-      <button
-        onClick={() => handleDeleteBroker(broker.id)}
-        className="text-red-400 hover:text-red-500"
-      >
-        <TrashIcon className="h-5 w-5" />
-      </button>
-    </div>
+        <CardHeader className="flex flex-row items-center justify-between py-4">
+                <div>
+            <CardTitle className="text-lg text-gray-900">{user.name}</CardTitle>
+            <div className="text-sm text-gray-600 mt-1">
+              {user.email}
+                </div>
+                </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="bg-white/50 text-gray-700">{user.role}</Badge>
+            {user.status === 'pending' && (
+              <Badge variant="warning" className="bg-yellow-500/10 text-yellow-700">Pending</Badge>
+            )}
+                </div>
+        </CardHeader>
+      </Card>
+    ));
+  };
+
+  if (isLoading) return (
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="relative">
+        <div className="w-12 h-12">
+          <div className="absolute w-12 h-12 border-4 border-blue-200 rounded-full"></div>
+          <div className="absolute w-12 h-12 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
+                </div>
+        <div className="mt-4 text-sm text-blue-500 font-medium">Loading...</div>
+                </div>
+                </div>
   );
 
-  // 在 Admin Tab 中添加角色管理按钮
-  const renderAdminHeader = () => (
-    <div className="flex items-center space-x-4">
-      <button
-        onClick={() => {
-          setSelectedBrokerForRoles(null);
-          setShowRoles(true);
-        }}
-        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-      >
-        <ShieldCheckIcon className="h-5 w-5 mr-2" />
-        Manage System Roles
-      </button>
-      <button
-        onClick={() => handleDeleteUser(getAdminUsers()[0].id)}
-        className="text-red-400 hover:text-red-500"
-      >
-        <TrashIcon className="h-5 w-5" />
-      </button>
-    </div>
+  if (error) return (
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-4">
+          <XMarkIcon className="h-6 w-6 text-red-600" />
+                </div>
+        <h3 className="text-lg font-semibold text-center text-gray-900 mb-2">Error Occurred</h3>
+        <p className="text-center text-gray-600">{error}</p>
+                </div>
+                </div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Team Management</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              Manage brokers and system administrators
-            </p>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
-              <button
-                onClick={() => setSelectedTab('brokers')}
-                className={`${
-                  selectedTab === 'brokers'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+    <div className="min-h-screen">
+      <div className="container mx-auto py-8 px-4 max-w-6xl">
+        <Tabs defaultValue={activeTab} onValueChange={(value) => setActiveTab(value as 'brokers' | 'agents')}>
+          <div className="flex justify-between items-center mb-8">
+            <TabsList className="flex gap-2 p-1">
+              <TabsTrigger 
+                value="brokers" 
+                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=inactive]:bg-gray-50 data-[state=inactive]:text-gray-600 rounded-lg px-6 py-2.5 transition-all duration-200 flex items-center gap-2 font-medium"
               >
-                Broker Companies
-              </button>
-              <button
-                onClick={() => setSelectedTab('admin')}
-                className={`${
-                  selectedTab === 'admin'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                <BuildingOfficeIcon className="h-4 w-4" />
+                Brokers
+              </TabsTrigger>
+              <TabsTrigger 
+                value="users" 
+                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=inactive]:bg-gray-50 data-[state=inactive]:text-gray-600 rounded-lg px-6 py-2.5 transition-all duration-200 flex items-center gap-2 font-medium"
               >
-                System Administrators
-              </button>
-            </nav>
-          </div>
-        </div>
-
-        {/* Broker Companies Tab */}
-        {selectedTab === 'brokers' && (
-          <div>
-            <div className="mb-6 flex justify-between items-center">
-              <button
+                <UserIcon className="h-4 w-4" />
+                Users
+              </TabsTrigger>
+            </TabsList>
+            {activeTab === 'brokers' && (
+              <Button
                 onClick={() => setShowAddBroker(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-full flex items-center gap-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
               >
-                <BuildingOfficeIcon className="h-5 w-5 mr-2" />
-                Add Broker Company
-              </button>
-            </div>
-
-            {/* Broker Companies List */}
-            <div className="space-y-6">
-              {brokerCompanies.map(broker => (
-                <div key={broker.id} className="bg-white shadow rounded-lg overflow-hidden">
-                  {/* Broker Header */}
-                  <div className="px-6 py-4 border-b border-gray-200">
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-1">
-                        <h3 className="text-lg font-medium text-gray-900">{broker.name}</h3>
-                        <div className="text-sm text-gray-500 space-y-1">
-                          {broker.email && (
-                            <div className="flex items-center">
-                              <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                              </svg>
-                              {broker.email}
-                            </div>
-                          )}
-                          {broker.phone && (
-                            <div className="flex items-center">
-                              <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                              </svg>
-                              {broker.phone}
-                            </div>
-                          )}
-                          {broker.address && (
-                            <div className="flex items-center">
-                              <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                              </svg>
-                              {broker.address}
-                            </div>
-                          )}
-                          {broker.website && (
-                            <div className="flex items-center">
-                              <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                              </svg>
-                              <a href={broker.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">
-                                {broker.website}
-                              </a>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      {renderBrokerHeader(broker)}
-                    </div>
-                  </div>
-
-                  {/* Broker Team Members */}
-                  <div className="px-6 py-4">
-                    <div className="flex justify-between items-center mb-4">
-                      <h4 className="text-sm font-medium text-gray-900">Team Members</h4>
-                      <button
-                        onClick={() => {
-                          setSelectedBroker(broker.id);
-                          setShowAddUser(true);
-                        }}
-                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                      >
-                        <UserPlusIcon className="h-4 w-4 mr-1" />
-                        Add Member
-                      </button>
-                    </div>
-
-                    <ul className="divide-y divide-gray-200">
-                      {getBrokerUsers(broker.id).map(user => (
-                        <li key={user.id} className="py-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center">
-                              <div className="flex-shrink-0">
-                                <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
-                                  <UserIcon className="h-5 w-5 text-gray-500" />
-                                </div>
-                              </div>
-                              <div className="ml-3">
-                                <div className="text-sm font-medium text-gray-900">
-                                  {user.firstName} {user.lastName}
-                                </div>
-                                <div className="text-sm text-gray-500">{user.email}</div>
-                              </div>
-                            </div>
-                            <div className="flex items-center space-x-4">
-                              <span className="text-xs font-medium text-blue-600">
-                                {user.role.name}
-                              </span>
-                              <button
-                                onClick={() => handleDeleteUser(user.id)}
-                                className="text-red-400 hover:text-red-500"
-                              >
-                                <TrashIcon className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              ))}
-            </div>
+                <BuildingOfficeIcon className="h-5 w-5" />
+                    Add Broker
+              </Button>
+            )}
           </div>
-        )}
 
-        {/* Admin Tab */}
-        {selectedTab === 'admin' && (
-          <div>
-            <div className="mb-6">
-              {renderAdminHeader()}
-            </div>
-
-            {/* Admin Users List */}
-            <div className="bg-white shadow overflow-hidden rounded-lg">
-              <ul className="divide-y divide-gray-200">
-                {getAdminUsers().map(user => (
-                  <li key={user.id} className="px-6 py-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0">
-                          <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                            <ShieldCheckIcon className="h-6 w-6 text-gray-500" />
-                          </div>
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {user.firstName} {user.lastName}
-                          </div>
-                          <div className="text-sm text-gray-500">{user.email}</div>
-                          <div className="text-xs text-blue-600 mt-1">
-                            {user.role.name}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          user.status === 'active' ? 'bg-green-100 text-green-800' :
-                          user.status === 'inactive' ? 'bg-red-100 text-red-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
-                        </span>
-                        <button
-                          onClick={() => handleDeleteUser(user.id)}
-                          className="text-red-400 hover:text-red-500"
-                        >
-                          <TrashIcon className="h-5 w-5" />
-                        </button>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        )}
-
-        {/* Add User Modal */}
-        {showAddUser && (
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                {selectedTab === 'admin' ? 'Add Administrator' : 'Add Team Member'}
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Email</label>
-                  <input
-                    type="email"
-                    value={newUser.email}
-                    onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">First Name</label>
-                  <input
-                    type="text"
-                    value={newUser.firstName}
-                    onChange={(e) => setNewUser({ ...newUser, firstName: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Last Name</label>
-                  <input
-                    type="text"
-                    value={newUser.lastName}
-                    onChange={(e) => setNewUser({ ...newUser, lastName: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-                {selectedTab === 'brokers' && !selectedBroker && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Broker Company</label>
-                    <select
-                      value={newUser.brokerId}
-                      onChange={(e) => setNewUser({ ...newUser, brokerId: e.target.value })}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    >
-                      <option value="">Select a broker company</option>
-                      {brokerCompanies.map(broker => (
-                        <option key={broker.id} value={broker.id}>{broker.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Role</label>
-                  <select
-                    value={newUser.roleId}
-                    onChange={(e) => setNewUser({ ...newUser, roleId: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  >
-                    <option value="">Select a role</option>
-                    {(selectedTab === 'admin' 
-                      ? DEFAULT_ROLES.filter(role => role.scope === 'admin')
-                      : DEFAULT_ROLES.filter(role => role.scope === 'agent')
-                    ).map((role: Role) => (
-                      <option key={role.id} value={role.id}>{role.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Phone Number</label>
-                  <input
-                    type="tel"
-                    value={newUser.phoneNumber}
-                    onChange={(e) => setNewUser({ ...newUser, phoneNumber: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-              </div>
-              <div className="mt-6 flex justify-end space-x-3">
-                <button
-                  onClick={() => {
-                    setShowAddUser(false);
-                    setSelectedBroker(null);
-                  }}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAddUser}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Add User
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Add Broker Modal */}
-        {showAddBroker && (
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Add Broker Company</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Company Name</label>
-                  <input
-                    type="text"
-                    value={newBroker.name}
-                    onChange={(e) => setNewBroker({ ...newBroker, name: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Email</label>
-                  <input
-                    type="email"
-                    value={newBroker.email}
-                    onChange={(e) => setNewBroker({ ...newBroker, email: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Phone</label>
-                  <input
-                    type="tel"
-                    value={newBroker.phone}
-                    onChange={(e) => setNewBroker({ ...newBroker, phone: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Address</label>
-                  <input
-                    type="text"
-                    value={newBroker.address}
-                    onChange={(e) => setNewBroker({ ...newBroker, address: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Website</label>
-                  <input
-                    type="url"
-                    value={newBroker.website}
-                    onChange={(e) => setNewBroker({ ...newBroker, website: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-              </div>
-              <div className="mt-6 flex justify-end space-x-3">
-                <button
-                  onClick={() => setShowAddBroker(false)}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAddBroker}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          <TabsContent value="brokers" className="mt-0 space-y-6">
+            {brokers.length === 0 ? (
+              <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-200">
+                <BuildingOfficeIcon className="h-16 w-16 mx-auto text-gray-400" />
+                <h3 className="mt-6 text-xl font-medium text-gray-900">No brokers yet</h3>
+                <p className="mt-2 text-gray-500">Get started by adding your first broker.</p>
+                <Button
+                  onClick={() => setShowAddBroker(true)}
+                  className="mt-6 bg-blue-500 hover:bg-blue-600 text-white px-6 py-2.5 rounded-xl shadow-lg transition-all duration-200"
                 >
                   Add Broker
+                </Button>
+                </div>
+            ) : (
+              <div className="grid gap-8">
+                {brokers.map((broker) => {
+                  const brokerAgents = agents.filter((a) => a.brokerId === broker.id);
+                  return (
+                    <div key={broker.id} className="bg-white rounded-2xl shadow-lg p-8 transition-all duration-200 hover:shadow-xl">
+                      <div className="flex justify-between items-center mb-6">
+                <div>
+                          <h3 className="text-2xl font-semibold text-gray-900">{broker.name}</h3>
+                          <p className="text-gray-500 mt-1">{broker.email}</p>
+                </div>
+                        <div className="flex gap-3">
+                <button
+                            onClick={() => {
+                              setEditedBroker(broker);
+                              setShowEditBroker(true);
+                            }}
+                            className="px-4 py-2 text-sm bg-white text-blue-600 rounded-full border border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 flex items-center gap-2 shadow-sm"
+                          >
+                            <PencilIcon className="h-4 w-4" />
+                            Edit
                 </button>
+                          <DeleteButton onDelete={handleDeleteBroker} id={broker.id} />
               </div>
             </div>
-          </div>
-        )}
 
-        {/* Add Role Modal */}
-        {showAddRole && (
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Add Custom Role</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Role Name</label>
-                  <input
-                    type="text"
-                    value={newRole.name}
-                    onChange={(e) => setNewRole({ ...newRole, name: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Description</label>
-                  <input
-                    type="text"
-                    value={newRole.description}
-                    onChange={(e) => setNewRole({ ...newRole, description: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Permissions</label>
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {(Object.entries(PERMISSIONS) as [string, string][]).map(([key, value]) => (
-                      <label key={value} className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={newRole.permissions.includes(value)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setNewRole({
-                                ...newRole,
-                                permissions: [...newRole.permissions, value],
-                              });
-                            } else {
-                              setNewRole({
-                                ...newRole,
-                                permissions: newRole.permissions.filter(p => p !== value),
-                              });
-                            }
-                          }}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        />
-                        <span className="ml-2 text-sm text-gray-600">{key}</span>
-                      </label>
-                    ))}
+                      <div className="mt-8">
+              <div className="flex justify-between items-center mb-6">
+                          <h4 className="text-xl font-medium text-gray-900">Team Members</h4>
+                <button
+                  onClick={() => {
+                              setSelectedBroker(broker);
+                              setShowAddAgent(true);
+                  }}
+                            className="px-5 py-2.5 bg-blue-600 text-white rounded-full flex items-center gap-2 hover:bg-blue-700 transform hover:-translate-y-0.5 transition-all duration-200 shadow-md hover:shadow-lg"
+                >
+                            <UserPlusIcon className="h-5 w-5" />
+                            Add Team Member
+                </button>
+              </div>
+
+                        {brokerAgents.length > 0 ? (
+                          <div className="grid gap-4">
+                            {brokerAgents.map((agent) => (
+                              <div
+                                key={agent.id}
+                                className="flex justify-between items-center p-6 bg-gray-50 rounded-xl border border-gray-100 transition-all duration-200 hover:shadow-md"
+                              >
+                                <div className="flex-grow">
+                                  <div className="flex items-center gap-3">
+                                    <div className="font-medium text-gray-900">{agent.name}</div>
+                                    <Badge variant="outline" className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                      agent.status === 'pending' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+                                      agent.status === 'active' ? 'bg-green-100 text-green-700 border-green-200' :
+                                      'bg-gray-100 text-gray-700 border-gray-200'
+                                    }`}>
+                                      {agent.status === 'draft' ? 'Draft' :
+                                       agent.status === 'pending' ? 'Pending' :
+                                       agent.status === 'active' ? 'Active' : agent.status}
+                                    </Badge>
+                                  </div>
+                                  <div className="text-gray-500 text-sm mt-1">{agent.email}</div>
+                                  {agent.invitationSentAt && (
+                                    <div className="text-gray-400 text-xs mt-2">
+                                      Invitation sent: {formatDate(agent.invitationSentAt)}
+                                    </div>
+                                  )}
+                      </div>
+                                <div className="flex items-center gap-3">
+                                  {agent.status !== 'active' && (
+                        <button
+                                      onClick={() => handleSendInvite(agent.id)}
+                                      disabled={sendingInvitations[agent.id]}
+                                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-2
+                                        ${agent.status === 'pending' 
+                                          ? 'bg-white text-yellow-600 border border-yellow-200 hover:bg-yellow-50 hover:border-yellow-300' 
+                                          : 'bg-blue-600 text-white hover:bg-blue-700 transform hover:-translate-y-0.5'}
+                                        ${sendingInvitations[agent.id] ? 'opacity-75 cursor-not-allowed' : ''}
+                                        shadow-sm hover:shadow
+                                      `}
+                                    >
+                                      {sendingInvitations[agent.id] ? (
+                                        <>
+                                          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                          </svg>
+                                          Sending...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <EnvelopeIcon className="h-4 w-4" />
+                                          {agent.invitationSentAt ? 'Resend Invite' : 'Send Invite'}
+                                        </>
+                                      )}
+                        </button>
+                      )}
+                                  <DeleteButton onDelete={handleDeleteAgent} id={agent.id} />
+                    </div>
                   </div>
-                </div>
+                ))}
               </div>
-              <div className="mt-6 flex justify-end space-x-3">
-                <button
-                  onClick={() => setShowAddRole(false)}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAddRole}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Add Role
-                </button>
-              </div>
-            </div>
+                        ) : (
+                          <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                            <UserPlusIcon className="h-12 w-12 mx-auto text-gray-400" />
+                            <p className="mt-4 text-gray-500">No team members yet. Add your first team member to get started.</p>
           </div>
         )}
-
-        {/* Roles Management Modal */}
-        {showRoles && renderRolesModal()}
-
-        {/* Edit Broker Modal */}
-        {editingBroker && (
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Broker Company</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Company Name</label>
-                  <input
-                    type="text"
-                    value={editingBroker.name}
-                    onChange={(e) => setEditingBroker({ ...editingBroker, name: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Email</label>
-                  <input
-                    type="email"
-                    value={editingBroker.email || ''}
-                    onChange={(e) => setEditingBroker({ ...editingBroker, email: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Phone</label>
-                  <input
-                    type="tel"
-                    value={editingBroker.phone || ''}
-                    onChange={(e) => setEditingBroker({ ...editingBroker, phone: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Address</label>
-                  <input
-                    type="text"
-                    value={editingBroker.address || ''}
-                    onChange={(e) => setEditingBroker({ ...editingBroker, address: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Website</label>
-                  <input
-                    type="url"
-                    value={editingBroker.website || ''}
-                    onChange={(e) => setEditingBroker({ ...editingBroker, website: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-              </div>
-              <div className="mt-6 flex justify-end space-x-3">
-                <button
-                  onClick={() => setEditingBroker(null)}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleEditBroker}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Save Changes
-                </button>
-              </div>
-            </div>
+                  );
+                })}
           </div>
         )}
+          </TabsContent>
+
+          <TabsContent value="users" className="mt-0">
+            {users.length === 0 ? (
+              <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-200">
+                <UserIcon className="h-16 w-16 mx-auto text-gray-400" />
+                <h3 className="mt-6 text-xl font-medium text-gray-900">No users yet</h3>
+                <p className="mt-2 text-gray-500">Users will appear here when team members are added.</p>
+                </div>
+            ) : (
+              <div className="grid gap-4">
+                {users.map(user => (
+                  <Card 
+                    key={user.id} 
+                    className="bg-white border border-gray-100 hover:shadow-lg transition-all duration-200"
+                  >
+                    <CardHeader className="flex flex-row items-center justify-between py-6">
+                <div>
+                        <CardTitle className="text-xl text-gray-900">{user.name}</CardTitle>
+                        <div className="text-gray-500 mt-1">
+                          {user.email}
+                </div>
+                </div>
+                      <div className="flex items-center gap-3">
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 px-3 py-1 rounded-full">
+                          {user.role}
+                        </Badge>
+                        {user.status === 'pending' && (
+                          <Badge variant="warning" className="bg-yellow-100 text-yellow-700 border-yellow-200 px-3 py-1 rounded-full">
+                            Pending
+                          </Badge>
+                        )}
+                </div>
+                    </CardHeader>
+                  </Card>
+                ))}
+                </div>
+            )}
+          </TabsContent>
+        </Tabs>
+
+        <Dialog open={showAddBroker} onOpenChange={setShowAddBroker}>
+          <DialogContent className="sm:max-w-md bg-white">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-semibold">Add Broker</DialogTitle>
+              <p className="text-sm text-gray-500 mt-1">
+                Enter the broker's information below.
+              </p>
+            </DialogHeader>
+            <BrokerForm 
+              onSubmit={handleAddBroker} 
+              onCancel={() => setShowAddBroker(false)} 
+            />
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showAddAgent} onOpenChange={setShowAddAgent}>
+          <DialogContent className="sm:max-w-md bg-white">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-semibold">Add Team Member</DialogTitle>
+              {selectedBroker && (
+                <p className="text-sm text-gray-500 mt-1">
+                  Adding team member to {selectedBroker.name}
+                </p>
+              )}
+            </DialogHeader>
+            <AgentForm 
+              onSubmit={handleAddAgent}
+              onCancel={() => setShowAddAgent(false)}
+              brokerName={selectedBroker?.name}
+            />
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showEditBroker} onOpenChange={setShowEditBroker}>
+          <DialogContent className="sm:max-w-md bg-white">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-semibold">Edit Broker</DialogTitle>
+              <p className="text-sm text-gray-500 mt-1">
+                Update the broker's information below.
+              </p>
+            </DialogHeader>
+            <BrokerForm 
+              onSubmit={handleEditBroker}
+              onCancel={() => {
+                setShowEditBroker(false);
+                setEditedBroker(null);
+              }}
+              initialData={editedBroker || undefined}
+            />
+          </DialogContent>
+        </Dialog>
+
+        <AlertDialog 
+          open={!!itemToDelete} 
+          onOpenChange={(open) => !open && setItemToDelete(null)}
+        >
+          <AlertDialogContent className="bg-white">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-xl font-semibold">Delete {itemToDelete?.type === 'broker' ? 'Broker' : 'Team Member'}</AlertDialogTitle>
+              <AlertDialogDescription className="text-gray-500 mt-2">
+                {itemToDelete && (
+                  <>
+                    Are you sure you want to delete {itemToDelete.type === 'broker' 
+                      ? brokers.find(b => b.id === itemToDelete.id)?.name 
+                      : agents.find(a => a.id === itemToDelete.id)?.name}? 
+                    This action cannot be undone.
+                    {itemToDelete.type === 'broker' && (
+                      <div className="mt-2">All associated team members will also be removed.</div>
+                    )}
+                  </>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="mt-6">
+              <AlertDialogCancel className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-full px-5 py-2.5 transition-all duration-200">
+                    Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-red-600 hover:bg-red-700 text-white rounded-full px-5 py-2.5 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 ml-3"
+                onClick={handleDeleteConfirm}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

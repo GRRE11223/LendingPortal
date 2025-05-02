@@ -1,0 +1,98 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+🔸 Table Summary
+1. Broker
+
+Column	Type
+id	text
+name	text
+email	text
+phone	text
+address	text
+website	text
+status	text
+createdAt	timestamp
+updatedAt	timestamp
+✅ Frontend: Users can create, edit, and delete brokers from the UI.
+
+2. Agent
+
+Column	Type
+id	text
+userId	text
+brokerId	text
+status	text
+createdAt	timestamp
+updatedAt	timestamp
+email	text
+name	text
+✅ Frontend: Users can input Agent email and name, which creates a record in the Agent table.
+
+3. User
+
+Column	Type
+id	text
+email	text
+name	text
+password	text
+role	text
+createdAt	timestamp
+updatedAt	timestamp
+status	text
+✅ On "Send Invite", create a User record:
+
+email and name come from Agent
+
+role = "Agent"
+
+status = "pending"
+
+✅ Once the agent sets a password, update status = "active".
+
+4. LoanRequest
+
+Column	Type
+id	text
+userId	text
+borrowerName	text
+borrowerInfo	jsonb
+status	text
+createdAt	timestamp
+updatedAt	timestamp
+✅ A user (agent) can only view loan requests where LoanRequest.userId == currentUser.id.
+
+5. Document
+
+Column	Type
+id	text
+name	text
+category	text
+status	text
+versions	jsonb
+comments	jsonb
+loanRequestId	text
+createdAt	timestamp
+updatedAt	timestamp
+🔸 Business Logic Flow (English)
+When a Broker is created on the frontend, it is stored in the Broker table. The UI allows creating, editing, and deleting broker records.
+
+When creating a new Agent, the frontend allows input of email and name. These are stored in the Agent table with an associated brokerId.
+
+When Send Invite is triggered:
+
+A new record is inserted into the User table using:
+
+email, name from Agent
+
+role = "Agent", status = "pending"
+
+When the Agent sets a password:
+
+The system updates the corresponding User record’s status to "active"
+
+When logged in, the Agent can only view their own LoanRequests, i.e., LoanRequest.userId = current logged-in user id.
+
+

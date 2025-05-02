@@ -15,37 +15,85 @@ datasource db {
 }
 
 model User {
-  id            String        @id @default(cuid())
-  email         String        @unique
-  name          String?
-  password      String
-  role          String        @default("user")
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id            String    @id @default(uuid())
+  email         String    @unique
+  firstName     String
+  lastName      String
+  passwordHash  String
+  roleId        String
+  brokerId      String?
+  phoneNumber   String?
+  status        String    @default("active")
+  isAdmin       Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  role          Role      @relation(fields: [roleId], references: [id])
+  broker        Broker?   @relation("UserBroker", fields: [brokerId], references: [id])
   loanRequests  LoanRequest[]
 }
 
+model Role {
+  id          String       @id @default(uuid())
+  name        String
+  brokerId    String?
+  scope       String       @default("agent")
+  isCustom    Boolean      @default(false)
+  description String?
+  permissions String[]
+  users       User[]
+  broker      Broker?      @relation("RoleBroker", fields: [brokerId], references: [id], map: "role_broker_fkey")
+  invitations Invitation[]
+  brokerCustom Broker?     @relation("BrokerCustomRoles", fields: [brokerId], references: [id], map: "role_broker_custom_fkey")
+}
+
+model Broker {
+  id          String       @id @default(uuid())
+  name        String
+  email       String?
+  phone       String?
+  address     String?
+  website     String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  users       User[]       @relation("UserBroker")
+  roles       Role[]       @relation("RoleBroker")
+  customRoles Role[]       @relation("BrokerCustomRoles")
+  invitations Invitation[]
+}
+
+model Invitation {
+  id        String    @id @default(uuid())
+  email     String
+  roleId    String
+  brokerId  String?
+  token     String    @unique
+  message   String?
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  role      Role      @relation(fields: [roleId], references: [id])
+  broker    Broker?   @relation(fields: [brokerId], references: [id])
+}
+
 model LoanRequest {
-  id            String     @id @default(cuid())
-  userId        String
-  user          User       @relation(fields: [userId], references: [id])
-  borrowerName  String
-  borrowerInfo  Json?      // 存储借款人信息
-  status        String     @default("pending")
-  documents     Document[]
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id          String      @id @default(uuid())
+  userId      String
+  title       String
+  status      String      @default("pending")
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  user        User        @relation(fields: [userId], references: [id])
+  documents   Document[]
 }
 
 model Document {
-  id           String      @id @default(cuid())
-  name         String
-  category     String
-  status       String      @default("pending")
-  versions     Json[]      // 存储文档版本历史
-  comments     Json[]      // 存储评论
-  loanRequest  LoanRequest @relation(fields: [loanRequestId], references: [id])
+  id            String      @id @default(uuid())
+  name          String
+  category      String
+  status        String      @default("pending")
+  versions      Json[]      // Document version history
+  comments      Json[]      // Comments
+  loanRequest   LoanRequest @relation(fields: [loanRequestId], references: [id])
   loanRequestId String
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }

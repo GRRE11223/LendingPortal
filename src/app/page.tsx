@@ -3,11 +3,24 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { supabase } from '@/lib/supabase';
+import type { User, Role } from '@/types';
 
 // 预设管理员账号
 const ADMIN_CREDENTIALS = {
   email: 'geri@bluebono.com',
   password: 'admin123'
+};
+
+const defaultAdminRole: Role = {
+  id: 'admin',
+  name: 'Administrator',
+  description: 'System Administrator',
+  permissions: ['manage_users', 'manage_roles', 'manage_system_settings'],
+  scope: 'admin',
+  isCustom: false,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString()
 };
 
 export default function Home() {
@@ -23,35 +36,65 @@ export default function Home() {
     setError('');
 
     try {
-      // 只验证预设的管理员账号
+      // 先检查是否是预设管理员账号
       if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
-        localStorage.setItem('user', JSON.stringify({
+        const adminUser: User = {
           id: 'admin',
           email: ADMIN_CREDENTIALS.email,
-          name: 'Admin',
-          role: 'admin'
-        }));
+          firstName: 'Admin',
+          lastName: 'User',
+          role: defaultAdminRole,
+          roleId: defaultAdminRole.id,
+          status: 'active',
+          isAdmin: true,
+          brokerCompany: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        
+        localStorage.setItem('user', JSON.stringify(adminUser));
         router.push('/dashboard');
-      } else {
-        setError('Invalid email or password');
+        return;
+      }
+
+      // 如果不是预设账号，则使用 Supabase 进行身份验证
+      const { data: { user }, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (authError) throw authError;
+
+      if (user) {
+        // 获取用户详细信息
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('*, roles(*)')
+          .eq('id', user.id)
+          .single();
+
+        if (userError) throw userError;
+        
+        router.push('/dashboard');
       }
     } catch (error) {
-      setError('Login failed. Please try again.');
+      console.error('Login error:', error);
+      setError('Invalid email or password');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
           <Image
             className="mx-auto w-auto"
             src="/logo.png"
             alt="Company Logo"
-            width={200}
-            height={50}
+            width={400}
+            height={100}
             priority
           />
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">

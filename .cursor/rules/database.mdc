@@ -1,0 +1,78 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+## ✅ Table Structure
+
+### 1. `Broker`
+| Column           | Type      |
+|------------------|-----------|
+| `id`             | text      |
+| `name`           | text      |
+| `email`          | text      |
+| `phone`          | text      |
+| `address`        | text      |
+| `website`        | text      |
+| `status`         | text      |
+| `createdAt`      | timestamp |
+| `updatedAt`      | timestamp |
+
+### 2. `Agent`
+| Column             | Type        |
+|--------------------|-------------|
+| `id`               | text        |
+| `userId`           | text        |
+| `brokerId`         | text        |
+| `status`           | text        |
+| `createdAt`        | timestamp   |
+| `updatedAt`        | timestamp   |
+| `email`            | text        |
+| `name`             | text        |
+| `invitationSentAt` | timestamptz |
+
+### 3. `User`
+| Column      | Type      |
+|-------------|-----------|
+| `id`        | text      |
+| `email`     | text      |
+| `name`      | text      |
+| `password`  | text      |
+| `role`      | text      |
+| `createdAt` | timestamp |
+| `updatedAt` | timestamp |
+| `status`    | text      |
+
+### 4. `LoanRequest`
+| Column         | Type      |
+|----------------|-----------|
+| `id`           | text      |
+| `userId`       | text      |
+| `borrowerName` | text      |
+| `borrowerInfo` | jsonb     |
+| `status`       | text      |
+| `createdAt`    | timestamp |
+| `updatedAt`    | timestamp |
+
+### 5. `Document`
+| Column         | Type      |
+|----------------|-----------|
+| `id`           | text      |
+| `name`         | text      |
+| `category`     | text      |
+| `status`       | text      |
+| `versions`     | jsonb     |
+| `comments`     | jsonb     |
+| `loanRequestId`| text      |
+| `createdAt`    | timestamp |
+| `updatedAt`    | timestamp |
+
+---
+
+## 📌 Coding Rules
+
+### 1. Always check the schema before coding
+- Double-check **table names** and **column names** for exact spelling and casing (case-sensitive).
+- Do **not** make up field names. If unsure, **ask or look it up** in the schema.
+
+
