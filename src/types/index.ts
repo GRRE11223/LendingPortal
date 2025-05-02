@@ -77,12 +77,24 @@ export interface Document {
   fileName?: string;
 }
 
+export interface OfficerInfo {
+  officerName: string;
+  email: string;
+  phone: string;
+  documents?: Document[];
+}
+
+export interface EscrowInfo extends OfficerInfo {}
+export interface TitleInfo extends OfficerInfo {}
+
 export interface LoanRequest {
   id: string;
   userId: string;
   borrowerName: string;
   borrowerInfo?: BorrowerInfo;
   documents?: Document[];
+  escrowInfo?: EscrowInfo;
+  titleInfo?: TitleInfo;
   status: string;
   createdAt: string;
   updatedAt: string;
