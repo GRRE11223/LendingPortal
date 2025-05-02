@@ -1,39 +1,56 @@
 # Lending Portal
 
-A private lending portal built with Next.js, Supabase, and TypeScript.
+A modern lending portal built with Next.js, TypeScript, and Prisma. This platform enables efficient management of loan requests, user roles, and document processing.
 
 ## Features
 
-- User Management (Brokers, Agents)
-- Email Invitations
+- User Authentication & Authorization
+- Role-based Access Control
+- Team Management with Invitation System
 - Document Management
 - Loan Request Processing
+- Real-time Updates
+- Responsive Design
 
-## Prerequisites
+## Tech Stack
 
-- Node.js 18+
+- Next.js 13+ (App Router)
+- TypeScript
+- Prisma (Database ORM)
+- Tailwind CSS
+- NextAuth.js
+- React Hook Form
+- Zod Validation
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 16.8 or later
 - npm or yarn
-- Gmail account for sending emails
-- Supabase account
+- PostgreSQL database
 
-## Environment Variables
+### Environment Variables
 
-Create a `.env.local` file in the root directory with the following variables:
+Create a `.env` file in the root directory with the following variables:
 
 ```env
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/dbname"
 
-# Gmail Configuration
-GMAIL_USER=your_gmail@gmail.com
-GMAIL_APP_PASSWORD=your_app_specific_password
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+# Next Auth
+NEXTAUTH_SECRET="your-secret-key"
+NEXTAUTH_URL="http://localhost:3000"
+
+# Gmail
+GMAIL_USER="your-email@gmail.com"
+GMAIL_APP_PASSWORD="your-app-specific-password"
+
+# App URL
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
-For production, create a `.env.production` file with the same variables but using production values.
-
-## Installation
+### Installation
 
 1. Clone the repository:
 ```bash
@@ -44,86 +61,43 @@ cd lending-portal
 2. Install dependencies:
 ```bash
 npm install
+# or
+yarn install
 ```
 
-3. Set up environment variables as described above.
+3. Run database migrations:
+```bash
+npx prisma migrate dev
+```
 
-4. Run the development server:
+4. Start the development server:
 ```bash
 npm run dev
+# or
+yarn dev
 ```
 
-## Database Schema
+The application will be available at `http://localhost:3000`.
 
-The application uses the following database schema:
+## Project Structure
 
-### User
-- id (String, @id)
-- email (String)
-- name (String)
-- password (String, optional)
-- role (String)
-- createdAt (DateTime)
-- updatedAt (DateTime)
-- status (String)
-
-### Agent
-- id (String, @id)
-- userId (String)
-- brokerId (String)
-- status (String)
-- createdAt (DateTime)
-- updatedAt (DateTime)
-- email (String)
-- name (String)
-- invitationSentAt (DateTime, optional)
-- invitationToken (String)
-
-### Broker
-- id (String, @id)
-- name (String)
-- email (String)
-- phone (String, optional)
-- address (String, optional)
-- website (String, optional)
-- status (String)
-- createdAt (DateTime)
-- updatedAt (DateTime)
-
-## Deployment
-
-1. Build the application:
-```bash
-npm run build
 ```
-
-2. Start the production server:
-```bash
-npm start
+src/
+├── app/              # Next.js 13 app directory
+├── components/       # Reusable React components
+├── lib/             # Utility functions and configurations
+├── types/           # TypeScript type definitions
+└── prisma/          # Database schema and migrations
 ```
-
-## Gmail Setup
-
-1. Enable 2-Step Verification in your Google Account
-2. Generate an App Password:
-   - Go to Google Account Settings
-   - Security
-   - 2-Step Verification
-   - App Passwords
-   - Generate a new app password for "Mail"
-3. Use this password in your environment variables
-
-## Security Notes
-
-- All invitation tokens are securely generated and stored in the database
-- Invitation links expire after 24 hours
-- Passwords are hashed before storage
-- Environment variables are properly handled for different environments
 
 ## Contributing
 
 1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a new Pull Request 
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License. 
